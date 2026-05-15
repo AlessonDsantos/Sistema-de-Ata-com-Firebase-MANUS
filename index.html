@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Atas - Igreja de Jesus Cristo</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --light-bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --border-radius: 12px;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-status {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #95a5a6;
+        }
+
+        .status-dot.online { background-color: var(--success-color); }
+        .status-dot.offline { background-color: var(--danger-color); }
+        .status-dot.connecting { background-color: #f1c40f; }
+
+        /* Toolbar */
+        .toolbar {
+            background: white;
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary { background-color: var(--accent-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-secondary { background-color: var(--secondary-color); color: white; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+
+        /* Main Layout */
+        main {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1024px) {
+            main { grid-template-columns: 1fr; }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--light-bg);
+            padding-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Form Styling */
+        .form-section {
+            margin-bottom: 2rem;
+            background: #fcfcfc;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+
+        .form-section h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .grid-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 0.7rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--accent-color);
+        }
+
+        .full-width { grid-column: 1 / -1; }
+
+        /* List Styling */
+        .search-box {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .ata-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 800px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .ata-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .ata-item:hover {
+            border-color: var(--accent-color);
+            background-color: #f9fbff;
+        }
+
+        .ata-item.active {
+            border-left: 5px solid var(--accent-color);
+            background-color: #f0f7ff;
+        }
+
+        .ata-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .ata-type-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .badge-sacramental { background: #e3f2fd; color: #1976d2; }
+        .badge-testemunho { background: #f3e5f5; color: #7b1fa2; }
+
+        .ata-item-info {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .ata-item-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 0.8rem;
+        }
+
+        .btn-icon {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+        /* Notifications */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1><i class="fas fa-church"></i> Gestão de Atas</h1>
+        </div>
+        <div class="header-status" id="connection-status">
+            <div class="status-dot connecting"></div>
+            <span id="status-text">Conectando ao Firebase...</span>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <button class="btn btn-primary" id="btn-nova"><i class="fas fa-plus"></i> Nova Ata</button>
+        <button class="btn btn-success" id="btn-salvar"><i class="fas fa-save"></i> Salvar Ata</button>
+        <button class="btn btn-secondary" id="btn-pdf"><i class="fas fa-file-pdf"></i> Gerar PDF</button>
+        <div style="flex-grow: 1;"></div>
+        <button class="btn btn-secondary" id="btn-exportar"><i class="fas fa-download"></i> Exportar Backup</button>
+        <button class="btn btn-secondary" id="btn-importar-trigger"><i class="fas fa-upload"></i> Importar Backup</button>
+        <input type="file" id="import-file" accept=".json" class="hidden">
+    </div>
+
+    <main>
+        <!-- Form Column -->
+        <section class="card">
+            <div class="card-title">
+                <span id="form-mode-title">Nova Ata</span>
+                <input type="hidden" id="ata-id">
+            </div>
+
+            <form id="ata-form">
+                <div class="form-section">
+                    <h3>Tipo de Ata</h3>
+                    <div class="form-group">
+                        <label for="tipo_ata">Selecione o Tipo de Reunião *</label>
+                        <select id="tipo_ata" required>
+                            <option value="sacramental">Reunião Sacramental</option>
+                            <option value="testemunho">Reunião de Testemunho</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Informações Gerais</h3>
+                    <div class="grid-form">
+                        <div class="form-group">
+                            <label for="estaca">Estaca</label>
+                            <input type="text" id="estaca">
+                        </div>
+                        <div class="form-group">
+                            <label for="ala">Ala</label>
+                            <input type="text" id="ala">
+                        </div>
+                        <div class="form-group">
+                            <label for="data">Data *</label>
+                            <input type="date" id="data" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="presidida_por">Presidida por</label>
+                            <input type="text" id="presidida_por">
+                        </div>
+                        <div class="form-group">
+                            <label for="dirigida_por">Dirigida por</label>
+                            <input type="text" id="dirigida_por">
+                        </div>
+                        <div class="form-group">
+                            <label for="frequencia">Frequência</label>
+                            <input type="number" id="frequencia">
+                        </div>
+                        <div class="form-group">
+                            <label for="regente">Regente</label>
+                            <input type="text" id="regente">
+                        </div>
+                        <div class="form-group">
+                            <label for="pianista">Pianista/Organista</label>
+                            <input type="text" id="pianista">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Abertura</h3>
+                    <div class="grid-form">
+                        <div class="form-group full-width">
+                            <label for="boas_vindas">Boas-vindas / Reconhecimentos</label>
+                            <textarea id="boas_vindas" rows="2"></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="anuncios">Anúncios</label>
+                            <textarea id="anuncios" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="hino_abertura">Hino de Abertura</label>
+                            <input type="text" id="hino_abertura">
+                        </div>
+                        <div class="form-group">
+                            <label for="hino_abertura_num">Nº do Hino</label>
+                            <input type="text" id="hino_abertura_num">
+                        </div>
+                        <div class="form-group">
+                            <label for="primeira_oracao">Primeira Oração</label>
+                            <input type="text" id="primeira_oracao">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Ações</h3>
+                    <div class="form-group">
+                        <label for="acoes">Ordenanças / Desobrigações / Apoios</label>
+                        <textarea id="acoes" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Sacramento</h3>
+                    <div class="grid-form">
+                        <div class="form-group">
+                            <label for="hino_sacramental">Hino Sacramental</label>
+                            <input type="text" id="hino_sacramental">
+                        </div>
+                        <div class="form-group">
+                            <label for="hino_sacramental_num">Nº do Hino</label>
+                            <input type="text" id="hino_sacramental_num">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção Específica: Sacramental -->
+                <div id="section-mensagens" class="form-section">
+                    <h3>Mensagens</h3>
+                    <div class="grid-form">
+                        <div class="form-group">
+                            <label for="primeiro_orador">Primeiro Orador</label>
+                            <input type="text" id="primeiro_orador">
+                        </div>
+                        <div class="form-group">
+                            <label for="segundo_orador">Segundo Orador</label>
+                            <input type="text" id="segundo_orador">
+                        </div>
+                        <div class="form-group">
+                            <label for="interludio">Interlúdio Musical</label>
+                            <input type="text" id="interludio">
+                        </div>
+                        <div class="form-group">
+                            <label for="interludio_num">Nº do Hino</label>
+                            <input type="text" id="interludio_num">
+                        </div>
+                        <div class="form-group">
+                            <label for="ultimo_orador">Último Orador</label>
+                            <input type="text" id="ultimo_orador">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="observacoes">Observações</label>
+                            <textarea id="observacoes" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção Específica: Testemunho -->
+                <div id="section-testemunhos" class="form-section hidden">
+                    <h3>Testemunhos</h3>
+                    <div class="form-group">
+                        <label for="testemunhos_lista">Nomes dos irmãos e irmãs (um por linha)</label>
+                        <textarea id="testemunhos_lista" rows="6" placeholder="Maria Silva&#10;João Santos&#10;Ana Oliveira"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Encerramento</h3>
+                    <div class="grid-form">
+                        <div class="form-group">
+                            <label for="hino_encerramento">Último Hino</label>
+                            <input type="text" id="hino_encerramento">
+                        </div>
+                        <div class="form-group">
+                            <label for="hino_encerramento_num">Nº do Hino</label>
+                            <input type="text" id="hino_encerramento_num">
+                        </div>
+                        <div class="form-group">
+                            <label for="ultima_oracao">Última Oração</label>
+                            <input type="text" id="ultima_oracao">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- List Column -->
+        <section class="card">
+            <div class="card-title">Atas Salvas</div>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Pesquisar por data, ala, dirigente ou tipo...">
+            </div>
+            <div class="ata-list" id="ata-list">
+                <!-- Itens serão inseridos via JS -->
+                <p style="text-align: center; color: #999; margin-top: 2rem;">Nenhuma ata encontrada.</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast"></div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script type="module">
+        // Configurações do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQvf-5TQtg4O1NKhRCwdeuvbWFzMfXsak",
+            authDomain: "minhas-atas.firebaseapp.com",
+            projectId: "minhas-atas",
+            storageBucket: "minhas-atas.firebasestorage.app",
+            messagingSenderId: "1074820300427",
+            appId: "1:1074820300427:web:3ab150a7856c7c40029e8e"
+        };
+
+        const COLLECTION = "atasSacramentais";
+        
+        // Inicialização
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const { jsPDF } = window.jspdf;
+
+        // Cache local
+        let atasCache = [];
+        let currentFilter = "";
+
+        // Elementos DOM
+        const form = document.getElementById('ata-form');
+        const listContainer = document.getElementById('ata-list');
+        const statusDot = document.querySelector('.status-dot');
+        const statusText = document.getElementById('status-text');
+        const tipoAtaSelect = document.getElementById('tipo_ata');
+        const sectionMensagens = document.getElementById('section-mensagens');
+        const sectionTestemunhos = document.getElementById('section-testemunhos');
+        const searchInput = document.getElementById('search-input');
+        const toast = document.getElementById('toast');
+
+        // --- Funções de UI ---
+
+        function showToast(message, type = 'success') {
+            toast.textContent = message;
+            toast.style.backgroundColor = type === 'success' ? '#27ae60' : '#e74c3c';
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        function updateStatus(status) {
+            statusDot.className = 'status-dot ' + status;
+            switch(status) {
+                case 'online': statusText.textContent = 'Conectado ao Firebase'; break;
+                case 'offline': statusText.textContent = 'Erro ao conectar'; break;
+                case 'connecting': statusText.textContent = 'Conectando ao Firebase...'; break;
+                case 'saving': statusText.textContent = 'Salvando...'; break;
+            }
+        }
+
+        function toggleSections() {
+            if (tipoAtaSelect.value === 'sacramental') {
+                sectionMensagens.classList.remove('hidden');
+                sectionTestemunhos.classList.add('hidden');
+            } else {
+                sectionMensagens.classList.add('hidden');
+                sectionTestemunhos.classList.remove('hidden');
+            }
+        }
+
+        function clearForm() {
+            form.reset();
+            document.getElementById('ata-id').value = '';
+            document.getElementById('form-mode-title').textContent = 'Nova Ata';
+            toggleSections();
+            document.querySelectorAll('.ata-item').forEach(i => i.classList.remove('active'));
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "";
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        // --- Operações de Dados ---
+
+        async function loadAtas() {
+            try {
+                updateStatus('connecting');
+                db.collection(COLLECTION).orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+                    atasCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderList();
+                    updateStatus('online');
+                }, error => {
+                    console.error("Erro no snapshot:", error);
+                    updateStatus('offline');
+                });
+            } catch (error) {
+                console.error("Erro ao carregar:", error);
+                updateStatus('offline');
+            }
+        }
+
+        function renderList() {
+            const filtered = atasCache.filter(ata => {
+                const search = currentFilter.toLowerCase();
+                return (
+                    (ata.data && ata.data.includes(search)) ||
+                    (ata.ala && ata.ala.toLowerCase().includes(search)) ||
+                    (ata.dirigida_por && ata.dirigida_por.toLowerCase().includes(search)) ||
+                    (ata.tipo_ata && ata.tipo_ata.toLowerCase().includes(search))
+                );
+            });
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #999; margin-top: 2rem;">Nenhuma ata encontrada.</p>';
+                return;
+            }
+
+            listContainer.innerHTML = filtered.map(ata => `
+                <div class="ata-item ${document.getElementById('ata-id').value === ata.id ? 'active' : ''}" onclick="window.editAta('${ata.id}')">
+                    <div class="ata-item-header">
+                        <span class="ata-type-badge badge-${ata.tipo_ata}">${ata.tipo_ata === 'sacramental' ? 'Sacramental' : 'Testemunho'}</span>
+                        <span style="font-weight: 600;">${formatDate(ata.data)}</span>
+                    </div>
+                    <div class="ata-item-info">
+                        <div><strong>Ala:</strong> ${ata.ala || '-'}</div>
+                        <div><strong>Dirigida por:</strong> ${ata.dirigida_por || '-'}</div>
+                    </div>
+                    <div class="ata-item-actions">
+                        <button class="btn btn-secondary btn-icon" onclick="event.stopPropagation(); window.editAta('${ata.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-primary btn-icon" onclick="event.stopPropagation(); window.generatePDFById('${ata.id}')" title="PDF"><i class="fas fa-file-pdf"></i></button>
+                        <button class="btn btn-danger btn-icon" onclick="event.stopPropagation(); window.deleteAta('${ata.id}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.editAta = (id) => {
+            const ata = atasCache.find(a => a.id === id);
+            if (!ata) return;
+
+            document.getElementById('ata-id').value = ata.id;
+            document.getElementById('form-mode-title').textContent = 'Editando Ata';
+            
+            // Preencher campos
+            Object.keys(ata).forEach(key => {
+                const el = document.getElementById(key === 'testemunhos' ? 'testemunhos_lista' : key);
+                if (el) el.value = ata[key];
+            });
+
+            toggleSections();
+            renderList();
+        };
+
+        window.deleteAta = async (id) => {
+            if (!confirm('Deseja realmente excluir esta ata?')) return;
+            try {
+                await db.collection(COLLECTION).doc(id).delete();
+                showToast('Ata excluída com sucesso!');
+                if (document.getElementById('ata-id').value === id) clearForm();
+            } catch (error) {
+                showToast('Erro ao excluir ata', 'error');
+            }
+        };
+
+        async function saveAta() {
+            const id = document.getElementById('ata-id').value;
+            const dataField = document.getElementById('data').value;
+            const tipoField = document.getElementById('tipo_ata').value;
+
+            if (!dataField || !tipoField) {
+                showToast('Data e Tipo de Ata são obrigatórios!', 'error');
+                return;
+            }
+
+            const formData = {
+                tipo_ata: tipoField,
+                estaca: document.getElementById('estaca').value,
+                ala: document.getElementById('ala').value,
+                data: dataField,
+                presidida_por: document.getElementById('presidida_por').value,
+                dirigida_por: document.getElementById('dirigida_por').value,
+                frequencia: document.getElementById('frequencia').value,
+                regente: document.getElementById('regente').value,
+                pianista: document.getElementById('pianista').value,
+                boas_vindas: document.getElementById('boas_vindas').value,
+                anuncios: document.getElementById('anuncios').value,
+                hino_abertura: document.getElementById('hino_abertura').value,
+                hino_abertura_num: document.getElementById('hino_abertura_num').value,
+                primeira_oracao: document.getElementById('primeira_oracao').value,
+                acoes: document.getElementById('acoes').value,
+                hino_sacramental: document.getElementById('hino_sacramental').value,
+                hino_sacramental_num: document.getElementById('hino_sacramental_num').value,
+                hino_encerramento: document.getElementById('hino_encerramento').value,
+                hino_encerramento_num: document.getElementById('hino_encerramento_num').value,
+                ultima_oracao: document.getElementById('ultima_oracao').value,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (tipoField === 'sacramental') {
+                formData.primeiro_orador = document.getElementById('primeiro_orador').value;
+                formData.segundo_orador = document.getElementById('segundo_orador').value;
+                formData.interludio = document.getElementById('interludio').value;
+                formData.interludio_num = document.getElementById('interludio_num').value;
+                formData.ultimo_orador = document.getElementById('ultimo_orador').value;
+                formData.observacoes = document.getElementById('observacoes').value;
+                formData.testemunhos_lista = "";
+            } else {
+                formData.testemunhos_lista = document.getElementById('testemunhos_lista').value;
+                formData.primeiro_orador = "";
+                formData.segundo_orador = "";
+                formData.interludio = "";
+                formData.interludio_num = "";
+                formData.ultimo_orador = "";
+                formData.observacoes = "";
+            }
+
+            try {
+                updateStatus('saving');
+                if (id) {
+                    await db.collection(COLLECTION).doc(id).update(formData);
+                    showToast('Ata atualizada com sucesso!');
+                } else {
+                    formData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    const docRef = await db.collection(COLLECTION).add(formData);
+                    document.getElementById('ata-id').value = docRef.id;
+                    showToast('Ata criada com sucesso!');
+                }
+                updateStatus('online');
+            } catch (error) {
+                console.error("Erro ao salvar:", error);
+                showToast('Erro ao salvar ata', 'error');
+                updateStatus('offline');
+            }
+        }
+
+        // --- Backup ---
+
+        function exportBackup() {
+            if (atasCache.length === 0) {
+                showToast('Não há dados para exportar', 'error');
+                return;
+            }
+            const dataStr = JSON.stringify(atasCache, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_atas_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) throw new Error('Formato inválido');
+
+                    updateStatus('saving');
+                    const batch = db.batch();
+                    data.forEach(item => {
+                        const { id, ...cleanItem } = item;
+                        // Garantir que createdAt seja um timestamp se existir
+                        if (cleanItem.createdAt && cleanItem.createdAt.seconds) {
+                            cleanItem.createdAt = new firebase.firestore.Timestamp(cleanItem.createdAt.seconds, cleanItem.createdAt.nanoseconds);
+                        } else {
+                            cleanItem.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                        }
+                        const newDocRef = db.collection(COLLECTION).doc();
+                        batch.set(newDocRef, cleanItem);
+                    });
+                    await batch.commit();
+                    showToast(`${data.length} atas importadas com sucesso!`);
+                    updateStatus('online');
+                } catch (error) {
+                    console.error("Erro na importação:", error);
+                    showToast('Erro ao importar backup. Verifique o arquivo.', 'error');
+                    updateStatus('offline');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input
+        }
+
+        // --- Geração de PDF ---
+
+        window.generatePDFById = (id) => {
+            const ata = atasCache.find(a => a.id === id);
+            if (ata) generatePDF(ata);
+        };
+
+        function generatePDF(ata) {
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const margin = 15;
+            const contentWidth = pageWidth - (margin * 2);
+            let currentY = 20;
+
+            // Auxiliares
+            const drawSectionHeader = (title) => {
+                pdf.setFillColor(240, 240, 240);
+                pdf.rect(margin, currentY, contentWidth, 8, 'F');
+                pdf.setFont("helvetica", "bold");
+                pdf.setFontSize(10);
+                pdf.setTextColor(44, 62, 80);
+                pdf.text(title.toUpperCase(), margin + 2, currentY + 6);
+                currentY += 12;
+            };
+
+            const addField = (label, value, x, width, isFull = false) => {
+                pdf.setFont("helvetica", "bold");
+                pdf.setFontSize(9);
+                pdf.setTextColor(100, 100, 100);
+                pdf.text(label + ":", x, currentY);
+                
+                pdf.setFont("helvetica", "normal");
+                pdf.setTextColor(0, 0, 0);
+                const val = value || "____________________";
+                
+                if (isFull) {
+                    const lines = pdf.splitTextToSize(val, width);
+                    pdf.text(lines, x, currentY + 5);
+                    return (lines.length * 5) + 7;
+                } else {
+                    pdf.text(val, x + pdf.getTextWidth(label + ": ") , currentY);
+                    return 0;
+                }
+            };
+
+            const checkPageBreak = (needed) => {
+                if (currentY + needed > 280) {
+                    pdf.addPage();
+                    currentY = 20;
+                    return true;
+                }
+                return false;
+            };
+
+            // Cabeçalho
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(14);
+            pdf.text("A IGREJA DE JESUS CRISTO DOS SANTOS DOS ÚLTIMOS DIAS", pageWidth / 2, currentY, { align: "center" });
+            currentY += 10;
+            
+            pdf.setFontSize(12);
+            const titulo = ata.tipo_ata === 'sacramental' ? "ATA DA REUNIÃO SACRAMENTAL" : "ATA DA REUNIÃO DE TESTEMUNHO";
+            pdf.text(titulo, pageWidth / 2, currentY, { align: "center" });
+            currentY += 15;
+
+            // Informações Gerais (3 colunas)
+            drawSectionHeader("Informações Gerais");
+            const colW = contentWidth / 3;
+            
+            addField("Estaca", ata.estaca, margin, colW);
+            addField("Ala", ata.ala, margin + colW, colW);
+            addField("Data", formatDate(ata.data), margin + (colW * 2), colW);
+            currentY += 8;
+            
+            addField("Presidida por", ata.presidida_por, margin, colW);
+            addField("Dirigida por", ata.dirigida_por, margin + colW, colW);
+            addField("Frequência", ata.frequencia, margin + (colW * 2), colW);
+            currentY += 8;
+
+            addField("Regente", ata.regente, margin, colW);
+            addField("Pianista", ata.pianista, margin + colW, colW);
+            currentY += 12;
+
+            // Abertura
+            drawSectionHeader("Abertura");
+            currentY += addField("Boas-vindas", ata.boas_vindas, margin, contentWidth, true);
+            currentY += addField("Anúncios", ata.anuncios, margin, contentWidth, true);
+            
+            addField("Hino de Abertura", `${ata.hino_abertura || ""} (Nº ${ata.hino_abertura_num || ""})`, margin, colW * 2);
+            addField("1ª Oração", ata.primeira_oracao, margin + (colW * 2), colW);
+            currentY += 12;
+
+            // Ações
+            drawSectionHeader("Ações");
+            currentY += addField("Ordenanças / Desobrigações / Apoios", ata.acoes, margin, contentWidth, true);
+            currentY += 5;
+
+            // Sacramento
+            drawSectionHeader("Sacramento");
+            addField("Hino Sacramental", `${ata.hino_sacramental || ""} (Nº ${ata.hino_sacramental_num || ""})`, margin, contentWidth);
+            currentY += 12;
+
+            // Conteúdo Dinâmico
+            if (ata.tipo_ata === 'sacramental') {
+                drawSectionHeader("Mensagens");
+                addField("1º Orador", ata.primeiro_orador, margin, colW * 1.5);
+                addField("2º Orador", ata.segundo_orador, margin + (colW * 1.5), colW * 1.5);
+                currentY += 8;
+                
+                addField("Interlúdio", `${ata.interludio || ""} (Nº ${ata.interludio_num || ""})`, margin, colW * 1.5);
+                addField("Último Orador", ata.ultimo_orador, margin + (colW * 1.5), colW * 1.5);
+                currentY += 12;
+                
+                currentY += addField("Observações", ata.observacoes, margin, contentWidth, true);
+                currentY += 5;
+            } else {
+                drawSectionHeader("Testemunhos");
+                const lista = ata.testemunhos_lista || "";
+                currentY += addField("Nomes", lista, margin, contentWidth, true);
+                currentY += 5;
+            }
+
+            // Encerramento
+            checkPageBreak(30);
+            drawSectionHeader("Encerramento");
+            addField("Hino de Encerramento", `${ata.hino_encerramento || ""} (Nº ${ata.hino_encerramento_num || ""})`, margin, colW * 2);
+            addField("Última Oração", ata.ultima_oracao, margin + (colW * 2), colW);
+
+            pdf.save(`Ata_${ata.tipo_ata}_${ata.data}.pdf`);
+        }
+
+        // --- Event Listeners ---
+
+        tipoAtaSelect.addEventListener('change', toggleSections);
+        
+        document.getElementById('btn-nova').addEventListener('click', clearForm);
+        
+        document.getElementById('btn-salvar').addEventListener('click', (e) => {
+            e.preventDefault();
+            saveAta();
+        });
+
+        document.getElementById('btn-pdf').addEventListener('click', () => {
+            const id = document.getElementById('ata-id').value;
+            if (id) {
+                window.generatePDFById(id);
+            } else {
+                showToast('Salve a ata antes de gerar o PDF', 'error');
+            }
+        });
+
+        document.getElementById('btn-exportar').addEventListener('click', exportBackup);
+        
+        document.getElementById('btn-importar-trigger').addEventListener('click', () => {
+            document.getElementById('import-file').click();
+        });
+
+        document.getElementById('import-file').addEventListener('change', importBackup);
+
+        searchInput.addEventListener('input', (e) => {
+            currentFilter = e.target.value;
+            renderList();
+        });
+
+        // Início
+        loadAtas();
+        toggleSections();
+
+    </script>
+</body>
+</html>
