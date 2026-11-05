@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Sistema de Atas - Igreja de Jesus Cristo</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Atas">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --border-radius: 12px;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body { background-color: var(--light-bg); color: var(--text-color); line-height: 1.6; }
+
+        /* Header */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.2rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .header-title h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+        .header-status { font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #95a5a6; }
+        .status-dot.online { background-color: var(--success-color); }
+        .status-dot.offline { background-color: var(--danger-color); }
+        .status-dot.connecting { background-color: #f1c40f; }
+        .status-dot.saving { background-color: var(--warning-color); }
+
+        /* Toolbar fica presa no topo ao rolar o formulário */
+        .toolbar {
+            background: white;
+            padding: 0.8rem 2rem;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #ddd;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .btn-primary { background-color: var(--accent-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-secondary { background-color: var(--secondary-color); color: white; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn kbd { font-size: 0.7rem; opacity: 0.75; font-family: inherit; }
+
+        @media (max-width: 700px) {
+            .toolbar { padding: 0.6rem 1rem; }
+            .toolbar .btn span.label-long { display: none; }
+            .btn kbd { display: none; }
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        @media (max-width: 1024px) { main { grid-template-columns: minmax(0, 1fr); padding: 1rem; } }
+
+        .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 2rem; box-shadow: var(--shadow); }
+        @media (max-width: 700px) { .card { padding: 1.2rem; } }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--light-bg);
+            padding-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dirty-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--warning-color);
+            background: #fef5e7;
+            padding: 2px 10px;
+            border-radius: 10px;
+        }
+
+        .form-section { margin-bottom: 2rem; background: #fcfcfc; padding: 1.5rem; border-radius: 10px; border: 1px solid #eee; }
+        .form-section h3 { font-size: 1rem; margin-bottom: 1rem; color: var(--accent-color); text-transform: uppercase; letter-spacing: 1px; }
+        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.2rem; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 0.85rem; font-weight: 600; color: #666; }
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 0.7rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group textarea { resize: vertical; overflow: hidden; min-height: 3.2rem; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent-color); }
+        .form-group .hint { font-size: 0.75rem; color: #999; }
+        .full-width { grid-column: 1 / -1; }
+
+        .search-box { margin-bottom: 1.5rem; display: flex; gap: 10px; }
+        .search-box input { flex: 1; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px; }
+
+        .ata-list { display: flex; flex-direction: column; gap: 1rem; max-height: 800px; overflow-y: auto; padding-right: 5px; }
+        .ata-item { border: 1px solid #eee; border-radius: 8px; padding: 1rem; transition: all 0.2s; cursor: pointer; position: relative; }
+        .ata-item:hover { border-color: var(--accent-color); background-color: #f9fbff; }
+        .ata-item.active { border-left: 5px solid var(--accent-color); background-color: #f0f7ff; }
+        .ata-item-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .ata-type-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; font-weight: 700; }
+        .badge-sacramental { background: #e3f2fd; color: #1976d2; }
+        .badge-testemunho { background: #f3e5f5; color: #7b1fa2; }
+        .ata-item-info { font-size: 0.85rem; color: #666; }
+        .ata-item-actions { display: flex; gap: 8px; margin-top: 0.8rem; }
+        .btn-icon { padding: 5px 10px; font-size: 0.8rem; }
+        .pending-tag { font-size: 0.7rem; color: var(--warning-color); margin-left: 6px; }
+        .empty-msg { text-align: center; color: #999; margin-top: 2rem; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            max-width: calc(100vw - 40px);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .hidden { display: none !important; }
+
+        /* ===== Navegação entre telas ===== */
+        .app-nav { display: flex; gap: 6px; background: rgba(255,255,255,0.08); padding: 4px; border-radius: 10px; }
+        .nav-btn { background: transparent; border: none; color: #cfd8e3; padding: 0.45rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .nav-btn.active { background: white; color: var(--primary-color); }
+        .nav-btn:hover:not(.active) { background: rgba(255,255,255,0.12); color: white; }
+
+        .muted { color: #999; font-size: 0.85rem; }
+        .section-hint { font-size: 0.8rem; color: #888; margin: -0.6rem 0 1rem; }
+
+        /* ===== Discursantes ===== */
+        .disc-main { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 2rem; padding: 2rem; max-width: 1600px; margin: 0 auto; }
+        @media (max-width: 1100px) { .disc-main { grid-template-columns: minmax(0, 1fr); padding: 1rem; gap: 1rem; } }
+
+        .cal-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+        .cal-titulo { font-size: 1.25rem; font-weight: 700; color: var(--primary-color); background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+        .cal-titulo:hover { background: var(--light-bg); }
+        .btn-light { background: var(--light-bg); color: var(--primary-color); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.82rem; }
+
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .cal-dow { text-align: center; font-size: 0.75rem; font-weight: 700; color: #888; text-transform: uppercase; padding: 4px 0; }
+        .cal-cell { min-height: 92px; border: 1px solid #f0f0f0; border-radius: 8px; padding: 4px 5px; display: flex; flex-direction: column; gap: 3px; background: #fafafa; overflow: hidden; }
+        .cal-cell.out { opacity: 0.35; }
+        .cal-cell.sunday { background: white; border-color: #d6e6f5; cursor: pointer; }
+        .cal-cell.sunday:hover { border-color: var(--accent-color); box-shadow: 0 2px 8px rgba(52,152,219,0.15); }
+        .cal-cell.today .cal-num { background: var(--accent-color); color: white; }
+        .cal-num { font-size: 0.78rem; font-weight: 700; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .cal-vazio { font-size: 0.72rem; color: #bbb; }
+        .cal-count { display: none; font-size: 0.72rem; font-weight: 700; color: var(--accent-color); }
+        .chip { font-size: 0.72rem; padding: 1px 6px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 3px solid; }
+        @media (max-width: 700px) {
+            .cal-cell { min-height: 56px; padding: 3px; }
+            .cal-cell .chip, .cal-cell .cal-vazio, .cal-cell .dom-tag { display: none; }
+            .cal-cell .cal-count { display: block; }
+        }
+
+        .st-convidado { background: #fef5e7; border-color: var(--warning-color); color: #9a6200; }
+        .st-confirmado { background: #e3f2fd; border-color: var(--accent-color); color: #1565c0; }
+        .st-discursou { background: #e8f6ee; border-color: var(--success-color); color: #1e7e46; }
+        .st-recusou { background: #fdecea; border-color: var(--danger-color); color: #b03a2e; text-decoration: line-through; }
+        .st-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+
+        .dom-tag { font-size: 0.66rem; font-weight: 700; padding: 1px 6px; border-radius: 6px; text-transform: uppercase; align-self: flex-start; }
+        .tag-normal { background: #eef2f5; color: #5d6d7e; }
+        .tag-jejum { background: #f3e5f5; color: #7b1fa2; }
+        .tag-conf_geral, .tag-conf_estaca { background: #fff3e0; color: #e65100; }
+        .tag-outro { background: #eceff1; color: #455a64; }
+
+        .semanas { display: flex; flex-direction: column; gap: 1rem; }
+        .semana { border: 1px solid #eee; border-radius: 10px; padding: 0.9rem 1rem; cursor: pointer; transition: border-color 0.2s; }
+        .semana:hover { border-color: var(--accent-color); }
+        .semana-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 0.5rem; }
+        .disc-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        .disc-table td { padding: 6px 6px; border-top: 1px solid #f3f3f3; vertical-align: top; }
+        .disc-table td:first-child { color: #888; white-space: nowrap; width: 1%; }
+        .disc-table tr.riscado td { opacity: 0.55; text-decoration: line-through; }
+        .disc-table a { color: var(--accent-color); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 1.2rem; }
+        .stat { background: var(--light-bg); border-radius: 8px; padding: 0.6rem 0.8rem; }
+        .stat b { display: block; font-size: 1.3rem; color: var(--primary-color); line-height: 1.2; }
+        .stat span { font-size: 0.75rem; color: #777; }
+
+        .or-filtros { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+        .or-filtros select, .or-busca { width: 100%; min-width: 0; padding: 0.55rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: white; }
+        .or-busca { width: 100%; margin-bottom: 8px; }
+        .or-lista { display: flex; flex-direction: column; gap: 6px; max-height: 640px; overflow-y: auto; padding-right: 4px; }
+        .or-grupo { font-size: 0.75rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin: 0.6rem 0 0.2rem; }
+        .or-item { border: 1px solid #eee; border-radius: 8px; padding: 0.6rem 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .or-item:hover { border-color: var(--accent-color); background: #f9fbff; }
+        .or-item.indisp { opacity: 0.6; }
+        .or-nome { font-weight: 600; font-size: 0.92rem; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .or-info { font-size: 0.8rem; color: #777; }
+        .or-info.alerta { color: #b03a2e; }
+        .tipo-badge { font-size: 0.65rem; font-weight: 700; padding: 1px 7px; border-radius: 8px; background: #eef2f5; color: #5d6d7e; text-transform: uppercase; }
+        .tipo-jovem { background: #e8f5e9; color: #2e7d32; }
+        .tipo-sumo_conselho { background: #ede7f6; color: #5e35b1; }
+        .tipo-visitante { background: #fff8e1; color: #f57f17; }
+        .tipo-indisp { background: #fdecea; color: #b03a2e; }
+
+        /* ===== Modais ===== */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(20,30,40,0.5); z-index: 1500; display: flex; align-items: flex-start; justify-content: center; padding: 4vh 12px; overflow-y: auto; }
+        .modal { background: white; border-radius: var(--border-radius); width: 100%; min-width: 0; max-width: 760px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
+        .modal.modal-sm { max-width: 520px; }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 1.1rem 1.5rem; border-bottom: 1px solid #eee; gap: 10px; }
+        .modal-head h2 { font-size: 1.15rem; color: var(--primary-color); }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999; line-height: 1; padding: 0 6px; }
+        .modal-body { padding: 1.2rem 1.5rem 1.5rem; }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 1rem; }
+        @media (max-width: 700px) { .modal-body { padding: 1rem; } .modal-head { padding: 0.9rem 1rem; } }
+
+        .dia-item { display: flex; gap: 10px; align-items: flex-start; border: 1px solid #eee; border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 8px; }
+        .dia-item .dia-info { flex: 1; min-width: 0; }
+        .dia-item .dia-acoes { display: flex; gap: 6px; }
+        .dia-item .slot { font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase; }
+        .dia-item .tema { font-size: 0.85rem; color: #555; overflow-wrap: anywhere; }
+        .disc-form { background: #fcfcfc; border: 1px solid #eee; border-radius: 10px; padding: 1rem; margin-top: 1rem; }
+        .disc-form h4 { font-size: 0.9rem; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.8rem; }
+        .avisos { display: flex; flex-direction: column; gap: 6px; margin-top: 0.8rem; }
+        .aviso { font-size: 0.82rem; padding: 0.5rem 0.7rem; border-radius: 6px; background: #eef6fc; color: #1f5f8b; }
+        .aviso.warn { background: #fef5e7; color: #8a5a00; }
+        .aviso.erro { background: #fdecea; color: #a93226; }
+        .hist-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; }
+        .hist-table th { text-align: left; font-size: 0.72rem; color: #888; text-transform: uppercase; padding: 4px 6px; }
+        .hist-table td { padding: 6px; border-top: 1px solid #f3f3f3; vertical-align: top; }
+        .hist-table tr[data-date] { cursor: pointer; }
+        .hist-table tr[data-date]:hover td { background: #f9fbff; }
+        .check-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; color: #555; cursor: pointer; }
+
+        /* ===== Instalar app (PWA) ===== */
+        .btn-instalar { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 0.4rem 0.8rem; font-size: 0.82rem; }
+        .install-banner {
+            position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom));
+            width: min(560px, calc(100vw - 24px)); background: white; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            padding: 1rem; display: flex; gap: 12px; align-items: center; z-index: 1800; animation: subir 0.3s ease-out;
+        }
+        @keyframes subir { from { transform: translate(-50%, 30px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        .install-banner img { width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0; }
+        .install-banner .ib-texto { flex: 1; min-width: 0; font-size: 0.88rem; }
+        .install-banner .ib-texto b { display: block; color: var(--primary-color); font-size: 0.95rem; }
+        .install-banner .ib-acoes { display: flex; flex-direction: column; gap: 6px; }
+
+        /* ===== Abas do celular (lista / formulário) ===== */
+        .mobile-tabs { display: none; }
+
+        /* ===== Modo leitura ===== */
+        .leitor { position: fixed; inset: 0; background: #f7f5f0; z-index: 1600; display: flex; flex-direction: column; --lf: 1; }
+        .leitor-bar {
+            display: flex; align-items: center; gap: 8px; background: var(--primary-color); color: white;
+            padding: calc(0.7rem + env(safe-area-inset-top)) 1rem 0.7rem;
+        }
+        .leitor-bar button { background: rgba(255,255,255,0.12); border: none; color: white; border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+        .leitor-titulo { flex: 1; min-width: 0; line-height: 1.25; }
+        .leitor-titulo b { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+        .leitor-titulo span { font-size: 1.05rem; font-weight: 700; }
+        .leitor-conteudo { flex: 1; overflow-y: auto; padding: 1rem; -webkit-overflow-scrolling: touch; }
+        .leitor-pagina { max-width: 720px; margin: 0 auto; font-size: calc(1.02rem * var(--lf)); line-height: 1.55; color: #222; }
+        .lt-secao { background: white; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.9rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .lt-secao h3 { font-size: calc(0.72rem * var(--lf)); text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent-color); margin-bottom: 0.6rem; }
+        .lt-campo { display: flex; justify-content: space-between; gap: 12px; padding: 0.35rem 0; border-bottom: 1px solid #f1f1f1; }
+        .lt-campo:last-child { border-bottom: none; }
+        .lt-campo .lt-l { color: #888; font-size: 0.85em; flex-shrink: 0; }
+        .lt-campo .lt-v { text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+        .lt-bloco { padding: 0.4rem 0; }
+        .lt-bloco .lt-l { color: #888; font-size: 0.85em; display: block; }
+        .lt-bloco .lt-v { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .lt-orador { padding: 0.6rem 0; border-bottom: 1px solid #f1f1f1; }
+        .lt-orador:last-child { border-bottom: none; }
+        .lt-orador .lt-l { color: #888; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.5px; }
+        .lt-orador .lt-nome { font-weight: 700; font-size: 1.08em; }
+        .lt-orador .lt-tema { color: #555; font-size: 0.92em; }
+        .lt-vazio { color: #bbb; font-weight: 400; }
+        .lt-nomes { columns: 2; column-gap: 1.5rem; }
+        .lt-nomes div { break-inside: avoid; padding: 2px 0; }
+        .leitor-nav { display: flex; gap: 8px; padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom)); background: white; border-top: 1px solid #e5e5e5; }
+        .leitor-nav button { flex: 1; padding: 0.75rem; border-radius: 10px; border: 1px solid #ddd; background: white; font-weight: 600; font-size: 0.92rem; cursor: pointer; color: var(--primary-color); }
+        .leitor-nav button:disabled { opacity: 0.35; cursor: default; }
+
+        /* ===== Celular e tablet ===== */
+        @media (max-width: 1024px) {
+            .mobile-tabs { display: flex; flex-basis: 100%; gap: 6px; background: var(--light-bg); padding: 4px; border-radius: 10px; }
+            .mobile-tabs button { flex: 1; border: none; background: transparent; padding: 0.55rem; border-radius: 8px; font-weight: 600; color: #777; font-size: 0.88rem; cursor: pointer; }
+            .mobile-tabs button.active { background: white; color: var(--primary-color); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+            body.mtab-lista #secao-form { display: none; }
+            body.mtab-form #secao-lista { display: none; }
+            .ata-list { max-height: none; }
+        }
+
+        @media (max-width: 768px) {
+            header { padding: calc(0.7rem + env(safe-area-inset-top)) 1rem 0.7rem; gap: 0.6rem; }
+            .header-title h1 { font-size: 1.1rem; }
+            #status-text { display: none; }
+            .app-nav { order: 3; flex-basis: 100%; }
+            .nav-btn { flex: 1; justify-content: center; }
+
+            .toolbar { padding: 0.5rem 0.6rem; gap: 6px; }
+            .toolbar > .btn { flex: 1; flex-direction: column; gap: 2px; padding: 0.45rem 0.2rem; font-size: 0.7rem; min-width: 0; }
+            .toolbar > .btn i { font-size: 1rem; }
+            .toolbar .spacer { display: none; }
+
+            main, .disc-main { padding: 0.75rem; gap: 0.75rem; }
+            .card { padding: 1rem; }
+            .form-section { padding: 1rem; margin-bottom: 1rem; }
+            .grid-form { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; }
+            /* 16px evita o zoom automático do iPhone ao tocar no campo */
+            .form-group input, .form-group select, .form-group textarea, .search-box input, .or-busca, .or-filtros select { font-size: 16px; }
+            .ata-item-actions .btn-icon { padding: 8px 12px; font-size: 0.9rem; }
+
+            .or-filtros { grid-template-columns: 1fr; }
+            .card-title { flex-wrap: wrap; }
+            .cal-head .cal-titulo { font-size: 1.05rem; }
+            .cal-head .btn-sm .lbl { display: none; }
+
+            .modal-overlay { padding: 0; }
+            .modal, .modal.modal-sm { max-width: none; min-height: 100%; border-radius: 0; }
+            .modal-head { position: sticky; top: 0; background: white; z-index: 2; padding-top: calc(0.9rem + env(safe-area-inset-top)); }
+            .disc-table { font-size: 0.85rem; table-layout: fixed; }
+            .disc-table td { white-space: normal !important; overflow-wrap: anywhere; padding: 6px 4px; }
+            .disc-table td:first-child { width: 22%; font-size: 0.78rem; }
+            .disc-table td:nth-child(3) { width: 15%; font-size: 0.78rem; }
+            .disc-table td:nth-child(4) { width: 26%; }
+            .disc-table .st-badge { font-size: 0.62rem; padding: 2px 6px; }
+            .semana { padding: 0.8rem; }
+            .lt-nomes { columns: 1; }
+            .dia-item { flex-wrap: wrap; }
+            .dia-item .dia-info { flex-basis: 100%; }
+            .modal .grid-form > .form-group { min-width: 0; }
+            .modal .form-group input, .modal .form-group select { width: 100%; min-width: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1><i class="fas fa-church"></i> Gestão de Atas</h1>
+        </div>
+        <nav class="app-nav">
+            <button class="nav-btn active" data-view="atas"><i class="fas fa-file-lines"></i> Atas</button>
+            <button class="nav-btn" data-view="disc"><i class="fas fa-microphone"></i> Discursantes</button>
+        </nav>
+        <div class="header-status" id="connection-status">
+            <button class="btn btn-instalar hidden" id="btn-instalar-header" title="Instalar o app neste aparelho"><i class="fas fa-download"></i> Instalar app</button>
+            <div class="status-dot connecting"></div>
+            <span id="status-text">Conectando ao Firebase...</span>
+        </div>
+    </header>
+
+    <div id="view-atas">
+    <div class="toolbar">
+        <button class="btn btn-primary" id="btn-nova"><i class="fas fa-plus"></i> <span>Nova<span class="label-long"> Ata</span></span></button>
+        <button class="btn btn-success" id="btn-salvar"><i class="fas fa-save"></i> <span>Salvar</span> <kbd>Ctrl+S</kbd></button>
+        <button class="btn btn-secondary" id="btn-ler" title="Modo leitura de ata"><i class="fas fa-book-open"></i> <span><span class="label-long">Modo </span>Leitura</span></button>
+        <button class="btn btn-secondary" id="btn-pdf"><i class="fas fa-file-pdf"></i> <span><span class="label-long">Gerar </span>PDF</span></button>
+        <div class="spacer" style="flex-grow: 1;"></div>
+        <button class="btn btn-secondary" id="btn-exportar" title="Exportar backup"><i class="fas fa-download"></i> <span>Exportar<span class="label-long"> Backup</span></span></button>
+        <button class="btn btn-secondary" id="btn-importar-trigger" title="Importar backup"><i class="fas fa-upload"></i> <span>Importar<span class="label-long"> Backup</span></span></button>
+        <input type="file" id="import-file" accept=".json" class="hidden">
+        <div class="mobile-tabs">
+            <button data-mtab="lista" class="active"><i class="fas fa-list"></i> Atas salvas</button>
+            <button data-mtab="form"><i class="fas fa-pen"></i> <span id="mtab-form-txt">Formulário</span></button>
+        </div>
+    </div>
+
+    <main>
+        <section class="card" id="secao-form">
+            <div class="card-title">
+                <span id="form-mode-title">Nova Ata</span>
+                <span id="dirty-badge" class="dirty-badge hidden">Alterações não salvas</span>
+                <input type="hidden" id="ata-id">
+            </div>
+
+            <form id="ata-form" autocomplete="off">
+                <div class="form-section">
+                    <h3>Tipo de Ata</h3>
+                    <div class="form-group">
+                        <label for="tipo_ata">Selecione o Tipo de Reunião *</label>
+                        <select id="tipo_ata" required>
+                            <option value="sacramental">Reunião Sacramental</option>
+                            <option value="testemunho">Reunião de Testemunho</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Informações Gerais</h3>
+                    <div class="grid-form">
+                        <div class="form-group">
+                            <label for="estaca">Estaca</label>
+                            <input type="text" id="estaca" value="Penha">
+                        </div>
+                        <div class="form-group">
+                            <label for="ala">Ala</label>
+                            <input type="text" id="ala" value="Vila Matilde">
+                        </div>
+                        <div class="form-group">
+                            <label for="data">Data *</label>
+                            <input type="date" id="data" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="presidida_por">Presidida por</label>
+                            <input type="text" id="presidida_por" value="Wesley Brito">
+                        </div>
+                        <div class="form-group">
+                            <label for="dirigida_por">Dirigida por</label>
+                            <input type="text" id="dirigida_por">
+                        </div>
+                        <div class="form-group">
+                            <label for="frequencia">Frequência</label>
+                            <input type="number" id="frequencia" min="0" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label for="regente">Regente</label>
+                            <input type="text" id="regente">
+                        </div>
+                        <div class="form-group">
+                            <label for="pianista">Pianista/Organista</label>
+                            <input type="text" id="pianista" value="Ana Carolina Brito">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Abertura</h3>
+                    <div class="grid-form">
+                        <div class="form-group full-width">
+                            <label for="boas_vindas">Boas-vindas / Reconhecimentos</label>
+                            <textarea id="boas_vindas" rows="2"></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="anuncios">Anúncios</label>
+                            <textarea id="anuncios" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="hino_abertura">Hino de Abertura</label>
+                            <input type="text" id="hino_abertura">
+                        </div>
+                        <div class="form-group">
+                            <label for="hino_abertura_num">Nº do Hino</label>
+                            <input type="text" id="hino_abertura_num" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label for="primeira_oracao">Primeira Oração</label>
+                            <input type="text" id="primeira_oracao">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Ações</h3>
+                    <div class="form-group">
+                        <label for="acoes">Ordenanças / Desobrigações / Apoios</label>
+                        <textarea id="acoes" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Sacramento</h3>
+                    <div class="grid-form">
+                        <div class="form-group">
+                            <label for="hino_sacramental">Hino Sacramental</label>
+                            <input type="text" id="hino_sacramental">
+                        </div>
+                        <div class="form-group">
+                            <label for="hino_sacramental_num">Nº do Hino</label>
+                            <input type="text" id="hino_sacramental_num" inputmode="numeric">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-mensagens" class="form-section">
+                    <h3>Mensagens</h3>
+                    <p class="section-hint"><i class="fas fa-link"></i> Os oradores são preenchidos pelos discursantes confirmados na aba Discursantes. Para trocar alguém, altere lá.</p>
+                    <div class="grid-form">
+                        <div class="form-group">
+                            <label for="primeiro_orador">Primeiro Orador</label>
+                            <input type="text" id="primeiro_orador">
+                        </div>
+                        <div class="form-group">
+                            <label for="segundo_orador">Segundo Orador</label>
+                            <input type="text" id="segundo_orador">
+                        </div>
+                        <div class="form-group">
+                            <label for="interludio">Interlúdio Musical</label>
+                            <input type="text" id="interludio">
+                        </div>
+                        <div class="form-group">
+                            <label for="interludio_num">Nº do Hino</label>
+                            <input type="text" id="interludio_num" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label for="ultimo_orador">Último Orador</label>
+                            <input type="text" id="ultimo_orador">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="observacoes">Observações</label>
+                            <textarea id="observacoes" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-testemunhos" class="form-section hidden">
+                    <h3>Testemunhos</h3>
+                    <div class="form-group">
+                        <label for="testemunhos_lista">Nomes dos irmãos e irmãs (um por linha)</label>
+                        <textarea id="testemunhos_lista" rows="6" placeholder="Maria Silva&#10;João Santos&#10;Ana Oliveira"></textarea>
+                        <span class="hint">No PDF os nomes saem separados por vírgula, para caber em uma folha.</span>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Encerramento</h3>
+                    <div class="grid-form">
+                        <div class="form-group">
+                            <label for="hino_encerramento">Último Hino</label>
+                            <input type="text" id="hino_encerramento">
+                        </div>
+                        <div class="form-group">
+                            <label for="hino_encerramento_num">Nº do Hino</label>
+                            <input type="text" id="hino_encerramento_num" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label for="ultima_oracao">Última Oração</label>
+                            <input type="text" id="ultima_oracao">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="card" id="secao-lista">
+            <div class="card-title">Atas Salvas <span id="ata-count" style="font-size:0.85rem;color:#999;font-weight:500;"></span></div>
+            <div class="search-box">
+                <input type="search" id="search-input" placeholder="Pesquisar por data (12/10), ala, dirigente, orador ou tipo...">
+            </div>
+            <div class="ata-list" id="ata-list">
+                <p class="empty-msg">Carregando atas...</p>
+            </div>
+        </section>
+    </main>
+    </div>
+
+    <!-- ===================== DISCURSANTES ===================== -->
+    <div id="view-disc" class="hidden">
+        <main class="disc-main">
+            <section class="card">
+                <div class="cal-head">
+                    <button class="btn btn-light btn-sm" id="cal-prev" title="Mês anterior"><i class="fas fa-chevron-left"></i></button>
+                    <button class="cal-titulo" id="cal-titulo" title="Clique para ver as semanas do mês"></button>
+                    <button class="btn btn-light btn-sm" id="cal-next" title="Próximo mês"><i class="fas fa-chevron-right"></i></button>
+                    <button class="btn btn-light btn-sm" id="cal-hoje">Hoje</button>
+                    <div style="flex-grow:1"></div>
+                    <button class="btn btn-secondary btn-sm" id="cal-modo"></button>
+                    <button class="btn btn-secondary btn-sm" id="cal-imprimir" title="Imprimir mês"><i class="fas fa-print"></i> <span class="lbl">Imprimir mês</span></button>
+                </div>
+                <div id="cal-body"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">
+                    <span>Oradores <span id="or-count" style="font-size:0.85rem;color:#999;font-weight:500;"></span></span>
+                    <span style="display:flex;gap:6px;">
+                        <button class="btn btn-primary btn-sm" id="or-add"><i class="fas fa-plus"></i> Adicionar</button>
+                        <button class="btn btn-secondary btn-sm" id="or-colar" title="Adicionar várias pessoas de uma vez"><i class="fas fa-paste"></i> Colar lista</button>
+                    </span>
+                </div>
+                <div class="stats-grid" id="or-stats"></div>
+                <input type="search" class="or-busca" id="or-busca" placeholder="Buscar pessoa pelo nome...">
+                <div class="or-filtros">
+                    <select id="or-filtro">
+                        <option value="todos">Todos (mais tempo sem discursar primeiro)</option>
+                        <option value="nunca">Só quem nunca discursou</option>
+                        <option value="6m">Sem discursar há 6+ meses</option>
+                        <option value="12m">Sem discursar há 12+ meses</option>
+                        <option value="indisp">Indisponíveis</option>
+                    </select>
+                    <select id="or-tipo">
+                        <option value="">Todos os tipos</option>
+                    </select>
+                </div>
+                <div class="or-lista" id="or-lista"><p class="empty-msg">Carregando...</p></div>
+            </section>
+        </main>
+    </div>
+
+    <datalist id="lista-oradores"></datalist>
+
+    <!-- Modo leitura de ata -->
+    <div class="leitor hidden" id="leitor" role="dialog" aria-label="Modo leitura de ata">
+        <div class="leitor-bar">
+            <button id="leitor-fechar" title="Fechar"><i class="fas fa-arrow-left"></i></button>
+            <div class="leitor-titulo"><b id="leitor-tipo"></b><span id="leitor-data"></span></div>
+            <button id="leitor-fonte" title="Tamanho da letra"><i class="fas fa-text-height"></i></button>
+            <button id="leitor-editar" title="Editar esta ata"><i class="fas fa-pen"></i> <span>Editar</span></button>
+        </div>
+        <div class="leitor-conteudo" id="leitor-conteudo"></div>
+        <div class="leitor-nav">
+            <button id="leitor-ant"><i class="fas fa-chevron-left"></i> Anterior</button>
+            <button id="leitor-prox">Próxima <i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Convite para instalar o app -->
+    <div class="install-banner hidden" id="install-banner">
+        <img src="icons/icon-192.png" alt="">
+        <div class="ib-texto">
+            <b>Instale o app de Atas</b>
+            <span id="ib-msg">Abre direto da tela inicial, como um aplicativo, e funciona mesmo com internet fraca.</span>
+        </div>
+        <div class="ib-acoes">
+            <button class="btn btn-primary btn-sm" id="ib-instalar">Instalar</button>
+            <button class="btn btn-light btn-sm" id="ib-depois">Agora não</button>
+        </div>
+    </div>
+
+    <!-- Modal: domingo -->
+    <div class="modal-overlay hidden" id="modal-dia">
+        <div class="modal">
+            <div class="modal-head">
+                <h2 id="dia-titulo"></h2>
+                <button class="modal-close" data-close title="Fechar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="grid-form">
+                    <div class="form-group">
+                        <label for="dia-tipo">Tipo de domingo</label>
+                        <select id="dia-tipo"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dia-nota">Nota do domingo (opcional)</label>
+                        <input type="text" id="dia-nota" placeholder="Ex.: tema do mês, visita do sumo conselho">
+                    </div>
+                </div>
+
+                <div style="margin-top:1.2rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+                        <strong style="color:var(--primary-color);">Discursantes</strong>
+                        <span class="muted" id="dia-tempo"></span>
+                    </div>
+                    <div id="dia-lista"></div>
+                </div>
+
+                <div class="disc-form">
+                    <h4 id="disc-form-titulo">Adicionar discursante</h4>
+                    <div class="grid-form">
+                        <div class="form-group full-width">
+                            <label for="disc-nome">Orador *</label>
+                            <input type="text" id="disc-nome" list="lista-oradores" placeholder="Digite o nome (pode ser alguém de fora da lista)">
+                        </div>
+                        <div class="form-group">
+                            <label for="disc-slot">Ordem</label>
+                            <select id="disc-slot">
+                                <option value="1">1º orador</option>
+                                <option value="2">2º orador</option>
+                                <option value="3">Último orador</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="disc-status">Situação</label>
+                            <select id="disc-status">
+                                <option value="convidado">Convidado</option>
+                                <option value="confirmado">Confirmado (aceitou)</option>
+                                <option value="recusou">Recusou</option>
+                                <option value="discursou">Discursou</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="disc-tempo">Tempo (min)</label>
+                            <input type="number" id="disc-tempo" min="1" max="60" inputmode="numeric" placeholder="Ex.: 10">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="disc-tema">Tema</label>
+                            <input type="text" id="disc-tema" placeholder="Ex.: A Expiação de Jesus Cristo">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="disc-fonte">Fonte do tema (link ou referência)</label>
+                            <input type="text" id="disc-fonte" placeholder="Ex.: link do discurso da conferência, Vem e Segue-Me, tema da estaca">
+                        </div>
+                    </div>
+                    <div class="avisos" id="disc-avisos"></div>
+                    <div class="modal-footer">
+                        <button class="btn btn-light btn-sm hidden" id="disc-cancelar">Cancelar edição</button>
+                        <button class="btn btn-success btn-sm" id="disc-salvar"><i class="fas fa-save"></i> <span id="disc-salvar-txt">Adicionar</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: pessoa -->
+    <div class="modal-overlay hidden" id="modal-pessoa">
+        <div class="modal">
+            <div class="modal-head">
+                <h2 id="p-titulo">Orador</h2>
+                <button class="modal-close" data-close title="Fechar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="grid-form">
+                    <div class="form-group full-width">
+                        <label for="p-nome">Nome *</label>
+                        <input type="text" id="p-nome">
+                    </div>
+                    <div class="form-group">
+                        <label for="p-tipo">Tipo</label>
+                        <select id="p-tipo"></select>
+                    </div>
+                    <div class="form-group" style="justify-content:flex-end;">
+                        <label class="check-row"><input type="checkbox" id="p-indisp"> Indisponível no momento</label>
+                    </div>
+                    <div class="form-group hidden" id="p-motivo-wrap">
+                        <label for="p-motivo">Motivo</label>
+                        <select id="p-motivo">
+                            <option>Mudou-se</option>
+                            <option>Pediu pausa</option>
+                            <option>Saúde</option>
+                            <option>Outro</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="p-obs">Observação</label>
+                        <input type="text" id="p-obs" placeholder="Ex.: prefere discursar no 1º domingo">
+                        <span class="hint">O site não tem login: evite anotar detalhes pessoais aqui.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger btn-sm hidden" id="p-excluir"><i class="fas fa-trash"></i> Excluir</button>
+                    <div style="flex-grow:1"></div>
+                    <button class="btn btn-success btn-sm" id="p-salvar"><i class="fas fa-save"></i> Salvar</button>
+                </div>
+
+                <div id="p-historico" style="margin-top:1.5rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: colar lista -->
+    <div class="modal-overlay hidden" id="modal-colar">
+        <div class="modal modal-sm">
+            <div class="modal-head">
+                <h2>Colar lista de oradores</h2>
+                <button class="modal-close" data-close title="Fechar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="colar-texto">Um nome por linha</label>
+                    <textarea id="colar-texto" rows="10" placeholder="Maria Silva&#10;João Santos&#10;Ana Oliveira"></textarea>
+                    <span class="hint">Nomes que já estão na lista são ignorados.</span>
+                </div>
+                <div class="form-group" style="margin-top:1rem;">
+                    <label for="colar-tipo">Tipo para todos</label>
+                    <select id="colar-tipo"></select>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success btn-sm" id="colar-salvar"><i class="fas fa-plus"></i> Adicionar todos</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script type="module">
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQvf-5TQtg4O1NKhRCwdeuvbWFzMfXsak",
+            authDomain: "minhas-atas.firebaseapp.com",
+            projectId: "minhas-atas",
+            storageBucket: "minhas-atas.firebasestorage.app",
+            messagingSenderId: "1074820300427",
+            appId: "1:1074820300427:web:3ab150a7856c7c40029e8e"
+        };
+
+        const COLLECTION = "atasSacramentais";
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const col = db.collection(COLLECTION);
+        const { jsPDF } = window.jspdf;
+
+        // Funciona sem internet: salva localmente e sincroniza quando a conexão voltar
+        db.enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Persistência offline indisponível:', err.code));
+
+        // Todos os campos do formulário (id do elemento = nome do campo no Firestore)
+        const FIELDS = [
+            'tipo_ata', 'estaca', 'ala', 'data', 'presidida_por', 'dirigida_por', 'frequencia', 'regente', 'pianista',
+            'boas_vindas', 'anuncios', 'hino_abertura', 'hino_abertura_num', 'primeira_oracao', 'acoes',
+            'hino_sacramental', 'hino_sacramental_num',
+            'primeiro_orador', 'segundo_orador', 'interludio', 'interludio_num', 'ultimo_orador', 'observacoes',
+            'testemunhos_lista',
+            'hino_encerramento', 'hino_encerramento_num', 'ultima_oracao'
+        ];
+        const SACRAMENTAL_ONLY = ['primeiro_orador', 'segundo_orador', 'interludio', 'interludio_num', 'ultimo_orador', 'observacoes'];
+
+        let atasCache = [];
+        let currentFilter = "";
+        let isDirty = false;
+        let toastTimer = null;
+
+        const $ = id => document.getElementById(id);
+        const form = $('ata-form');
+        const listContainer = $('ata-list');
+        const statusDot = document.querySelector('.status-dot');
+        const statusText = $('status-text');
+        const tipoAtaSelect = $('tipo_ata');
+        const toast = $('toast');
+
+        // --- Utilitários ---
+
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "";
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        function showToast(message, type = 'success', ms = 3000) {
+            clearTimeout(toastTimer);
+            toast.textContent = message;
+            toast.style.backgroundColor = { success: '#27ae60', error: '#e74c3c', info: '#2c3e50' }[type] || '#27ae60';
+            toast.style.display = 'block';
+            toastTimer = setTimeout(() => { toast.style.display = 'none'; }, ms);
+        }
+
+        function updateStatus(status) {
+            statusDot.className = 'status-dot ' + status;
+            statusText.textContent = {
+                online: 'Conectado e sincronizado',
+                offline: 'Erro ao conectar',
+                connecting: 'Conectando ao Firebase...',
+                saving: 'Sincronizando alterações...'
+            }[status];
+        }
+
+        function setDirty(v) {
+            isDirty = v;
+            $('dirty-badge').classList.toggle('hidden', !v);
+        }
+
+        function confirmDiscard() {
+            return !isDirty || confirm('Há alterações não salvas nesta ata. Deseja descartá-las?');
+        }
+
+        function autoGrow(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 2 + 'px';
+        }
+        const growAll = () => form.querySelectorAll('textarea').forEach(autoGrow);
+
+        function toggleSections() {
+            const sac = tipoAtaSelect.value === 'sacramental';
+            $('section-mensagens').classList.toggle('hidden', !sac);
+            $('section-testemunhos').classList.toggle('hidden', sac);
+            growAll();
+        }
+
+        // --- Formulário ---
+
+        function collectForm() {
+            const data = {};
+            FIELDS.forEach(k => { data[k] = $(k).value; });
+            if (data.tipo_ata === 'sacramental') {
+                data.testemunhos_lista = "";
+            } else {
+                SACRAMENTAL_ONLY.forEach(k => { data[k] = ""; });
+            }
+            return data;
+        }
+
+        function fillForm(ata) {
+            FIELDS.forEach(k => { $(k).value = ata[k] ?? ''; });
+            if (!tipoAtaSelect.value) tipoAtaSelect.value = 'sacramental';
+            toggleSections();
+        }
+
+        function clearForm() {
+            if (!confirmDiscard()) return;
+            form.reset();
+            $('ata-id').value = '';
+            $('form-mode-title').textContent = 'Nova Ata';
+            setDirty(false);
+            toggleSections();
+            renderList();
+            mostrarMTab('form');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            $('data').focus();
+        }
+
+        function editAta(id) {
+            if (id === $('ata-id').value) { mostrarMTab('form'); return; }
+            const ata = atasCache.find(a => a.id === id);
+            if (!ata || !confirmDiscard()) return;
+            mostrarMTab('form');
+            $('ata-id').value = ata.id;
+            $('form-mode-title').textContent = 'Editando Ata de ' + formatDate(ata.data);
+            fillForm(ata);
+            setDirty(false);
+            renderList();
+            if (window.innerWidth <= 1024) window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Dados ---
+
+        function sortAtas(list) {
+            // Mais recente primeiro pela data da reunião, não pela data em que foi digitada
+            return list.sort((a, b) => (b.data || '').localeCompare(a.data || '') ||
+                ((b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+        }
+
+        function loadAtas() {
+            updateStatus('connecting');
+            col.onSnapshot({ includeMetadataChanges: true }, snapshot => {
+                atasCache = sortAtas(snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    _pending: doc.metadata.hasPendingWrites,
+                    ...doc.data()
+                })));
+                renderList();
+                updateStatus(snapshot.metadata.hasPendingWrites ? 'saving' : (snapshot.metadata.fromCache && !navigator.onLine ? 'offline' : 'online'));
+                if (!navigator.onLine) statusText.textContent = 'Sem internet: alterações ficam salvas no aparelho';
+            }, error => {
+                console.error("Erro no snapshot:", error);
+                updateStatus('offline');
+                listContainer.innerHTML = '<p class="empty-msg">Não foi possível carregar as atas.</p>';
+            });
+        }
+
+        function renderList() {
+            const terms = norm(currentFilter).split(/\s+/).filter(Boolean);
+            const filtered = atasCache.filter(ata => {
+                if (!terms.length) return true;
+                const hay = norm([
+                    formatDate(ata.data), ata.data, ata.ala, ata.dirigida_por, ata.presidida_por,
+                    ata.tipo_ata === 'testemunho' ? 'testemunho' : 'sacramental',
+                    ata.primeiro_orador, ata.segundo_orador, ata.ultimo_orador
+                ].join(' '));
+                return terms.every(t => hay.includes(t));
+            });
+
+            $('ata-count').textContent = atasCache.length ? `(${filtered.length}${filtered.length !== atasCache.length ? ' de ' + atasCache.length : ''})` : '';
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = '<p class="empty-msg">Nenhuma ata encontrada.</p>';
+                return;
+            }
+
+            const activeId = $('ata-id').value;
+            listContainer.innerHTML = filtered.map(ata => {
+                const isTest = ata.tipo_ata === 'testemunho';
+                const nTest = (ata.testemunhos_lista || '').split('\n').filter(s => s.trim()).length;
+                const detalhe = isTest
+                    ? `<div><strong>Testemunhos:</strong> ${nTest}</div>`
+                    : `<div><strong>Oradores:</strong> ${esc([ata.primeiro_orador, ata.segundo_orador, ata.ultimo_orador].filter(Boolean).join(', ') || '-')}</div>`;
+                return `
+                <div class="ata-item ${activeId === ata.id ? 'active' : ''}" data-id="${esc(ata.id)}" data-action="edit">
+                    <div class="ata-item-header">
+                        <span class="ata-type-badge badge-${isTest ? 'testemunho' : 'sacramental'}">${isTest ? 'Testemunho' : 'Sacramental'}</span>
+                        <span style="font-weight: 600;">${esc(formatDate(ata.data))}${ata._pending ? '<span class="pending-tag" title="Aguardando sincronização"><i class="fas fa-cloud-arrow-up"></i></span>' : ''}</span>
+                    </div>
+                    <div class="ata-item-info">
+                        <div><strong>Dirigida por:</strong> ${esc(ata.dirigida_por || '-')}</div>
+                        ${detalhe}
+                    </div>
+                    <div class="ata-item-actions">
+                        <button class="btn btn-success btn-icon" data-action="ler" title="Ler (modo leitura)"><i class="fas fa-book-open"></i> Ler</button>
+                        <button class="btn btn-secondary btn-icon" data-action="edit" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-primary btn-icon" data-action="pdf" title="Gerar PDF"><i class="fas fa-file-pdf"></i></button>
+                        <button class="btn btn-danger btn-icon" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function deleteAta(id) {
+            const ata = atasCache.find(a => a.id === id);
+            if (!ata) return;
+            const nome = `${ata.tipo_ata === 'testemunho' ? 'Testemunho' : 'Sacramental'} de ${formatDate(ata.data)}`;
+            if (!confirm(`Excluir a ata "${nome}"?\n\nIsso não pode ser desfeito. Se não tiver certeza, exporte um backup antes.`)) return;
+            try {
+                const p = col.doc(id).delete();
+                if ($('ata-id').value === id) { setDirty(false); clearForm(); }
+                showToast('Ata excluída.');
+                await p;
+            } catch (error) {
+                console.error(error);
+                showToast('Erro ao excluir ata', 'error');
+            }
+        }
+
+        function saveAta() {
+            const id = $('ata-id').value;
+            const formData = collectForm();
+
+            if (!formData.data) {
+                showToast('Preencha a data da reunião.', 'error');
+                $('data').focus();
+                return false;
+            }
+
+            // Aviso de possível duplicata (mesma data e mesmo tipo)
+            const dup = atasCache.find(a => a.id !== id && a.data === formData.data && a.tipo_ata === formData.tipo_ata);
+            if (dup && !confirm(`Já existe uma ata deste tipo em ${formatDate(formData.data)}. Salvar mesmo assim?`)) return false;
+
+            formData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+            const ref = id ? col.doc(id) : col.doc();
+            if (!id) formData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+
+            // Não espera o servidor: com a persistência offline a gravação local é imediata.
+            // Isso evita o botão "travado" com internet ruim e impede duplicata por clique duplo.
+            ref.set(formData, { merge: true }).catch(error => {
+                console.error("Erro ao salvar:", error);
+                showToast('Erro ao salvar ata. Tente novamente.', 'error', 5000);
+                setDirty(true);
+            });
+
+            $('ata-id').value = ref.id;
+            $('form-mode-title').textContent = 'Editando Ata de ' + formatDate(formData.data);
+            setDirty(false);
+            showToast(id ? 'Ata atualizada!' : 'Ata criada!');
+            return true;
+        }
+
+        // --- Backup ---
+
+        function exportBackup() {
+            const strip = arr => arr.map(({ _pending, ...rest }) => rest);
+            const payload = {
+                versao: 2,
+                exportadoEm: new Date().toISOString(),
+                atas: strip(atasCache),
+                oradores: strip(oradores),
+                discursos: strip(discursos),
+                domingos: Object.entries(domingos).map(([id, v]) => ({ id, ...v }))
+            };
+            if (!payload.atas.length && !payload.oradores.length && !payload.discursos.length) {
+                showToast('Não há dados para exportar', 'error');
+                return;
+            }
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_atas_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(`Backup exportado: ${payload.atas.length} atas, ${payload.oradores.length} oradores, ${payload.discursos.length} discursos.`, 'success', 4000);
+        }
+
+        const toTimestamp = v => (v && typeof v.seconds === 'number')
+            ? new firebase.firestore.Timestamp(v.seconds, v.nanoseconds || 0)
+            : null;
+
+        function importBackup(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    // Backup antigo = lista de atas; backup novo = objeto com atas, oradores, discursos e domingos
+                    const grupos = Array.isArray(data) ? { atas: data } : (data || {});
+                    const plano = [['atas', col, 'atas'], ['oradores', colOr, 'oradores'], ['discursos', colDisc, 'discursos'], ['domingos', colDom, 'domingos marcados']]
+                        .filter(([k]) => Array.isArray(grupos[k]) && grupos[k].length);
+                    if (!plano.length) throw new Error('Formato inválido');
+                    const resumo = plano.map(([k, , nome]) => `${grupos[k].length} ${nome}`).join(', ');
+                    if (!confirm(`Importar ${resumo}?\n\nRegistros que já existem (mesmo ID) serão atualizados, não duplicados.`)) return;
+
+                    updateStatus('saving');
+                    for (const [k, colecao] of plano) {
+                        const itens = grupos[k];
+                        // O Firestore aceita no máximo 500 operações por lote
+                        for (let i = 0; i < itens.length; i += 400) {
+                            const batch = db.batch();
+                            itens.slice(i, i + 400).forEach(item => {
+                                const { id, _pending, ...rest } = item;
+                                if (k !== 'domingos') {
+                                    rest.createdAt = toTimestamp(rest.createdAt) || firebase.firestore.FieldValue.serverTimestamp();
+                                    rest.updatedAt = toTimestamp(rest.updatedAt) || firebase.firestore.FieldValue.serverTimestamp();
+                                }
+                                batch.set(id ? colecao.doc(id) : colecao.doc(), rest);
+                            });
+                            await batch.commit();
+                        }
+                    }
+                    showToast(`Importado: ${resumo}.`);
+                } catch (error) {
+                    console.error("Erro na importação:", error);
+                    showToast('Erro ao importar backup. Verifique o arquivo.', 'error', 5000);
+                    updateStatus('offline');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- PDF (sempre tenta caber em 1 folha) ---
+
+        const PT_TO_MM = 0.3528;
+        const LHF = 1.25;          // fator de entrelinha
+        const MIN_SCALE = 0.6;     // menor redução de fonte aceita (≈ 5,7pt)
+
+        const hymn = (name, num) => [num ? `Nº ${num}` : '', (name || '').trim()].filter(Boolean).join(' - ');
+
+        function layoutPDF(a, s, allowBreak) {
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const W = pdf.internal.pageSize.getWidth();
+            const H = pdf.internal.pageSize.getHeight();
+            const M = 15, CW = W - M * 2, LIMIT = H - 12;
+            const fs = 9.5 * s;
+            const lh = fs * PT_TO_MM * LHF;
+            const gap = 1.6 * s;
+            let y = 16;
+
+            const ensure = h => { if (allowBreak && y + h > LIMIT) { pdf.addPage(); y = 16; } };
+            const setLabel = () => { pdf.setFont('helvetica', 'bold'); pdf.setFontSize(fs); pdf.setTextColor(100, 100, 100); };
+            const setValue = () => { pdf.setFont('helvetica', 'normal'); pdf.setFontSize(fs); pdf.setTextColor(0, 0, 0); };
+
+            // Cabeçalho
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFontSize(13 * s);
+            pdf.text('A IGREJA DE JESUS CRISTO DOS SANTOS DOS ÚLTIMOS DIAS', W / 2, y, { align: 'center' });
+            y += 6.5 * s;
+            pdf.setFontSize(11 * s);
+            pdf.text(a.tipo_ata === 'testemunho' ? 'ATA DA REUNIÃO DE TESTEMUNHO' : 'ATA DA REUNIÃO SACRAMENTAL', W / 2, y, { align: 'center' });
+            y += 10 * s;
+
+            const section = title => {
+                const h = 6 * s;
+                ensure(h + lh * 2);
+                const top = y - lh + gap;
+                pdf.setFillColor(238, 240, 242);
+                pdf.rect(M, top, CW, h, 'F');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(fs);
+                pdf.setTextColor(44, 62, 80);
+                pdf.text(title.toUpperCase(), M + 2, top + h * 0.7);
+                y = top + h + lh + gap * 0.6;
+            };
+
+            // Linha com campos lado a lado; cada valor quebra dentro da própria coluna
+            const row = items => {
+                let x = M;
+                const cells = items.map(([label, value, frac]) => {
+                    const w = CW * frac;
+                    setLabel();
+                    const lab = label + ': ';
+                    const lw = pdf.getTextWidth(lab);
+                    setValue();
+                    const lines = pdf.splitTextToSize(String(value ?? '').trim() || '__________', Math.max(w - lw - 3, 12));
+                    const cell = { x, lab, lw, lines };
+                    x += w;
+                    return cell;
+                });
+                const maxLines = Math.max(...cells.map(c => c.lines.length));
+                ensure(maxLines * lh);
+                cells.forEach(c => {
+                    setLabel(); pdf.text(c.lab, c.x, y);
+                    setValue(); pdf.text(c.lines, c.x + c.lw, y, { lineHeightFactor: LHF });
+                });
+                y += maxLines * lh + gap;
+            };
+
+            // Bloco de texto livre em largura total
+            const block = (label, value) => {
+                const txt = String(value ?? '').trim();
+                setLabel();
+                const lab = label + ': ';
+                if (!txt) {
+                    ensure(lh);
+                    pdf.text(lab, M, y);
+                    setValue(); pdf.text('-', M + pdf.getTextWidth(lab), y);
+                    y += lh + gap;
+                    return;
+                }
+                ensure(lh * 2);
+                pdf.text(lab, M, y);
+                y += lh;
+                setValue();
+                pdf.splitTextToSize(txt, CW).forEach(line => {
+                    ensure(lh);
+                    pdf.text(line, M, y);
+                    y += lh;
+                });
+                y += gap;
+            };
+
+            section('Informações Gerais');
+            row([['Estaca', a.estaca, 1 / 3], ['Ala', a.ala, 1 / 3], ['Data', formatDate(a.data), 1 / 3]]);
+            row([['Presidida por', a.presidida_por, 1 / 3], ['Dirigida por', a.dirigida_por, 1 / 3], ['Frequência', a.frequencia, 1 / 3]]);
+            row([['Regente', a.regente, 1 / 3], ['Pianista/Organista', a.pianista, 2 / 3]]);
+
+            section('Abertura');
+            block('Boas-vindas / Reconhecimentos', a.boas_vindas);
+            block('Anúncios', a.anuncios);
+            row([['Hino de abertura', hymn(a.hino_abertura, a.hino_abertura_num), 0.6], ['1ª oração', a.primeira_oracao, 0.4]]);
+
+            section('Ações');
+            block('Ordenanças / Desobrigações / Apoios', a.acoes);
+
+            section('Sacramento');
+            row([['Hino sacramental', hymn(a.hino_sacramental, a.hino_sacramental_num), 1]]);
+
+            if (a.tipo_ata === 'testemunho') {
+                section('Testemunhos');
+                const nomes = (a.testemunhos_lista || '').split('\n').map(n => n.trim()).filter(Boolean);
+                block(`Prestaram testemunho (${nomes.length})`, nomes.join(', '));
+            } else {
+                section('Mensagens');
+                row([['1º orador', a.primeiro_orador, 0.5], ['2º orador', a.segundo_orador, 0.5]]);
+                row([['Interlúdio', hymn(a.interludio, a.interludio_num), 0.5], ['Último orador', a.ultimo_orador, 0.5]]);
+                block('Observações', a.observacoes);
+            }
+
+            section('Encerramento');
+            row([['Último hino', hymn(a.hino_encerramento, a.hino_encerramento_num), 0.6], ['Última oração', a.ultima_oracao, 0.4]]);
+
+            return { pdf, bottom: y - lh, limit: LIMIT };
+        }
+
+        function generatePDF(ata) {
+            // Reduz a fonte em passos de 5% até tudo caber em uma folha
+            for (let s = 1; s >= MIN_SCALE - 1e-9; s -= 0.05) {
+                const r = layoutPDF(ata, s, false);
+                if (r.bottom <= r.limit) {
+                    r.pdf.save(`Ata_${ata.tipo_ata === 'testemunho' ? 'Testemunho' : 'Sacramental'}_${ata.data}.pdf`);
+                    if (s < 0.999) showToast(`PDF gerado em 1 folha (fonte reduzida para ${Math.round(s * 100)}%).`, 'info', 4000);
+                    return;
+                }
+            }
+            // Último recurso: conteúdo grande demais até com a fonte mínima
+            layoutPDF(ata, MIN_SCALE, true).pdf.save(`Ata_${ata.tipo_ata}_${ata.data}.pdf`);
+            showToast('Conteúdo longo demais: o PDF precisou de 2 folhas. Resuma anúncios ou ações.', 'error', 6000);
+        }
+
+        // =====================================================================
+        // DISCURSANTES
+        // Coleções: oradores (pessoas), discursos (quem discursa em qual domingo),
+        // domingos (tipo especial do domingo: jejum, conferência...)
+        // =====================================================================
+
+        const colOr = db.collection('oradores');
+        const colDisc = db.collection('discursos');
+        const colDom = db.collection('domingos');
+        const TS = () => firebase.firestore.FieldValue.serverTimestamp();
+
+        let oradores = [];
+        let discursos = [];
+        let domingos = {};
+        const pendingSync = new Set();   // datas cuja ata precisa ser atualizada após gravar um discurso
+
+        const TIPOS = { adulto: 'Adulto', jovem: 'Jovem', sumo_conselho: 'Sumo Conselho', visitante: 'Visitante' };
+        const STATUS = { convidado: 'Convidado', confirmado: 'Confirmado', recusou: 'Recusou', discursou: 'Discursou' };
+        const SLOTS = { 1: '1º orador', 2: '2º orador', 3: 'Último orador' };
+        const DOM_TIPOS = {
+            normal: 'Reunião normal',
+            jejum: 'Jejum e testemunho',
+            conf_geral: 'Conferência Geral',
+            conf_estaca: 'Conferência de Estaca',
+            outro: 'Sem discursantes (outro)'
+        };
+        const DOM_CURTO = { jejum: 'Jejum', conf_geral: 'Conf. Geral', conf_estaca: 'Conf. Estaca', outro: 'Sem discursos' };
+        const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+        // Preenche os selects de tipo
+        const tipoOptions = Object.entries(TIPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+        $('p-tipo').innerHTML = tipoOptions;
+        $('colar-tipo').innerHTML = tipoOptions;
+        $('or-tipo').innerHTML += tipoOptions;
+        $('dia-tipo').innerHTML = Object.entries(DOM_TIPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+
+        // --- Datas ---
+        const pad = n => String(n).padStart(2, '0');
+        const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+        const hoje = () => toISO(new Date());
+
+        function mesesDesde(dateStr) {
+            const a = parseISO(dateStr), b = new Date();
+            return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) - (b.getDate() < a.getDate() ? 1 : 0);
+        }
+        function tempoTxt(dateStr) {
+            if (dateStr > hoje()) return 'agendado';
+            const m = mesesDesde(dateStr);
+            if (m < 1) return 'há menos de 1 mês';
+            if (m === 1) return 'há 1 mês';
+            if (m < 24) return `há ${m} meses`;
+            const anos = Math.floor(m / 12), resto = m % 12;
+            return `há ${anos} anos${resto ? ` e ${resto} ${resto === 1 ? 'mês' : 'meses'}` : ''}`;
+        }
+        const diasEntre = (a, b) => Math.abs(parseISO(a) - parseISO(b)) / 86400000;
+
+        function domingosDoMes(y, m) {
+            const r = [];
+            const d = new Date(y, m, 1);
+            while (d.getDay() !== 0) d.setDate(d.getDate() + 1);
+            while (d.getMonth() === m) { r.push(toISO(d)); d.setDate(d.getDate() + 7); }
+            return r;
+        }
+
+        // --- Regras ---
+
+        // Confirmado com data já passada conta como "discursou".
+        // Se alguém falta no dia, você troca no sistema e marca "Recusou", então isso continua correto.
+        const effStatus = d => (d.status === 'confirmado' && d.data < hoje()) ? 'discursou' : (d.status || 'convidado');
+        const contaComoFeito = d => effStatus(d) === 'discursou';
+        const vaiParaAta = d => ['confirmado', 'discursou'].includes(effStatus(d));
+
+        // 1º domingo do mês é jejum por padrão, a não ser que você marque outra coisa
+        const domTipo = date => domingos[date]?.tipo || (parseISO(date).getDate() <= 7 ? 'jejum' : 'normal');
+
+        const findOrador = nome => {
+            const n = norm(nome).trim().replace(/\s+/g, ' ');
+            return n ? oradores.find(o => norm(o.nome).trim().replace(/\s+/g, ' ') === n) : null;
+        };
+        const oradorPorId = id => oradores.find(o => o.id === id);
+
+        function discursosDe(o) {
+            return discursos
+                .filter(d => d.oradorId ? d.oradorId === o.id : norm(d.nome).trim() === norm(o.nome).trim())
+                .sort((a, b) => b.data.localeCompare(a.data));
+        }
+        function infoOrador(o) {
+            const ds = discursosDe(o);
+            const feitos = ds.filter(contaComoFeito);
+            return { ds, feitos, ultimo: feitos[0]?.data || null };
+        }
+
+        const discDoDia = date => discursos
+            .filter(d => d.data === date)
+            .sort((a, b) => (a.slot || 1) - (b.slot || 1) || (a.status === 'recusou') - (b.status === 'recusou'));
+
+        const nomeCurto = s => {
+            const p = String(s || '').trim().split(/\s+/);
+            return p.length > 1 ? `${p[0]} ${p[p.length - 1][0]}.` : p[0];
+        };
+        const linkFonte = f => /^https?:\/\//i.test(f || '')
+            ? `<a href="${esc(f)}" target="_blank" rel="noopener" title="${esc(f)}"><i class="fas fa-up-right-from-square"></i> fonte</a>`
+            : (f ? `<span class="muted">(${esc(f)})</span>` : '');
+
+        // --- Integração com a ata ---
+
+        function nomesDoDia(date) {
+            const r = { 1: [], 2: [], 3: [] };
+            discDoDia(date).filter(vaiParaAta).forEach(d => (r[d.slot] || r[1]).push(d.nome));
+            return { primeiro_orador: r[1].join(' e '), segundo_orador: r[2].join(' e '), ultimo_orador: r[3].join(' e ') };
+        }
+
+        // Atualiza a ata sacramental daquele domingo (se existir) com os oradores confirmados
+        function syncAta(date) {
+            const nomes = nomesDoDia(date);
+            atasCache
+                .filter(a => a.data === date && a.tipo_ata !== 'testemunho')
+                .forEach(a => {
+                    if (Object.keys(nomes).some(k => (a[k] || '') !== nomes[k])) {
+                        col.doc(a.id).set({ ...nomes, updatedAt: TS() }, { merge: true })
+                            .catch(err => { console.error(err); showToast('Erro ao atualizar a ata com os oradores.', 'error'); });
+                    }
+                });
+            // Ata aberta na tela com a mesma data
+            if ($('data').value === date && tipoAtaSelect.value === 'sacramental') {
+                if (!isDirty) Object.entries(nomes).forEach(([k, v]) => { $(k).value = v; });
+                else showToast('Os oradores deste domingo mudaram. A ata aberta tem alterações não salvas: confira os oradores antes de salvar.', 'info', 6000);
+            }
+        }
+
+        // Ao escolher a data de uma ata nova, preenche os oradores confirmados
+        $('data').addEventListener('change', () => {
+            if (tipoAtaSelect.value !== 'sacramental' || !$('data').value) return;
+            const nomes = nomesDoDia($('data').value);
+            let preencheu = false;
+            Object.entries(nomes).forEach(([k, v]) => {
+                if (v && !$(k).value.trim()) { $(k).value = v; preencheu = true; }
+            });
+            if (preencheu) showToast('Oradores preenchidos com os discursantes confirmados.', 'info');
+        });
+
+        // --- Carregamento ---
+
+        function loadDiscursantes() {
+            const onErr = err => { console.error(err); showToast('Erro ao carregar discursantes. Verifique as regras do Firebase.', 'error', 6000); };
+            colOr.onSnapshot(s => {
+                oradores = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+                refreshDisc();
+            }, onErr);
+            colDisc.onSnapshot(s => {
+                discursos = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(d => d.data);
+                pendingSync.forEach(syncAta);
+                pendingSync.clear();
+                refreshDisc();
+            }, onErr);
+            colDom.onSnapshot(s => {
+                domingos = {};
+                s.docs.forEach(d => { domingos[d.id] = d.data(); });
+                refreshDisc();
+            }, onErr);
+        }
+
+        function refreshDisc() {
+            renderCalendar();
+            renderOradores();
+            $('lista-oradores').innerHTML = oradores
+                .filter(o => !o.indisponivel)
+                .map(o => `<option value="${esc(o.nome)}">${esc(TIPOS[o.tipo] || '')}</option>`).join('');
+            if (diaAtual) renderDia();
+            if (pessoaAtual && !$('modal-pessoa').classList.contains('hidden')) renderHistorico();
+        }
+
+        // --- Calendário ---
+
+        const agora = new Date();
+        let calY = agora.getFullYear(), calM = agora.getMonth();
+        let calModo = window.innerWidth <= 700 ? 'semanas' : 'grade';   // no celular a lista de semanas é mais fácil de ler
+
+        function renderCalendar() {
+            $('cal-titulo').textContent = `${MESES[calM]} ${calY}`;
+            $('cal-modo').innerHTML = calModo === 'grade'
+                ? '<i class="fas fa-list"></i> Semanas do mês'
+                : '<i class="fas fa-calendar"></i> Calendário';
+            if (calModo === 'grade') renderGrade(); else renderSemanas();
+        }
+
+        function renderGrade() {
+            const first = new Date(calY, calM, 1);
+            const start = new Date(calY, calM, 1 - first.getDay());
+            const t = hoje();
+            let html = DIAS.map(d => `<div class="cal-dow">${d}</div>`).join('');
+            for (let i = 0; i < 42; i++) {
+                const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+                if (i % 7 === 0 && i > 0 && d.getMonth() !== calM) break;
+                const iso = toISO(d);
+                const fora = d.getMonth() !== calM;
+                const dom = d.getDay() === 0 && !fora;
+                let inner = '';
+                if (dom) {
+                    const tipo = domTipo(iso);
+                    const ds = discDoDia(iso).filter(x => x.status !== 'recusou');
+                    if (tipo !== 'normal') inner += `<span class="dom-tag tag-${tipo}">${DOM_CURTO[tipo]}</span>`;
+                    inner += ds.map(x => `<span class="chip st-${effStatus(x)}" title="${esc(`${SLOTS[x.slot] || ''}: ${x.nome}${x.tema ? ' — ' + x.tema : ''} (${STATUS[effStatus(x)]})`)}">${esc(nomeCurto(x.nome))}</span>`).join('');
+                    if (ds.length) inner += `<span class="cal-count">${ds.length} <i class="fas fa-microphone"></i></span>`;
+                    if (tipo === 'normal' && !ds.length) inner += '<span class="cal-vazio">+ planejar</span>';
+                }
+                html += `<div class="cal-cell${fora ? ' out' : ''}${dom ? ' sunday' : ''}${iso === t ? ' today' : ''}"${dom ? ` data-date="${iso}"` : ''}><span class="cal-num">${d.getDate()}</span>${inner}</div>`;
+            }
+            $('cal-body').className = 'cal-grid';
+            $('cal-body').innerHTML = html;
+        }
+
+        function renderSemanas() {
+            const html = domingosDoMes(calY, calM).map((iso, i) => {
+                const tipo = domTipo(iso);
+                const ds = discDoDia(iso);
+                const tempo = ds.filter(x => x.status !== 'recusou').reduce((s, x) => s + (+x.tempo || 0), 0);
+                const nota = domingos[iso]?.nota;
+                const linhas = ds.length
+                    ? ds.map(x => `<tr class="${x.status === 'recusou' ? 'riscado' : ''}">
+                            <td>${SLOTS[x.slot] || ''}</td>
+                            <td><strong>${esc(x.nome)}</strong><div>${esc(x.tema || 'Sem tema definido')} ${linkFonte(x.fonte)}</div></td>
+                            <td style="white-space:nowrap">${x.tempo ? x.tempo + ' min' : ''}</td>
+                            <td style="text-align:right"><span class="st-badge st-${effStatus(x)}">${STATUS[effStatus(x)]}</span></td>
+                        </tr>`).join('')
+                    : `<tr><td colspan="4" class="muted">${tipo === 'normal' ? 'Nenhum discursante planejado. Clique para planejar.' : 'Domingo sem discursantes.'}</td></tr>`;
+                return `<div class="semana" data-date="${iso}">
+                    <div class="semana-head">
+                        <span>${i + 1}ª semana · <strong>${formatDate(iso)}</strong></span>
+                        <span class="dom-tag tag-${tipo}">${DOM_TIPOS[tipo]}</span>
+                        ${tempo ? `<span class="muted"><i class="far fa-clock"></i> ${tempo} min</span>` : ''}
+                        ${nota ? `<span class="muted">· ${esc(nota)}</span>` : ''}
+                    </div>
+                    <table class="disc-table">${linhas}</table>
+                </div>`;
+            }).join('');
+            $('cal-body').className = 'semanas';
+            $('cal-body').innerHTML = html;
+        }
+
+        function mudarMes(delta) {
+            const d = new Date(calY, calM + delta, 1);
+            calY = d.getFullYear(); calM = d.getMonth();
+            renderCalendar();
+        }
+
+        $('cal-prev').addEventListener('click', () => mudarMes(-1));
+        $('cal-next').addEventListener('click', () => mudarMes(1));
+        $('cal-hoje').addEventListener('click', () => { calY = agora.getFullYear(); calM = agora.getMonth(); renderCalendar(); });
+        const alternarModo = () => { calModo = calModo === 'grade' ? 'semanas' : 'grade'; renderCalendar(); };
+        $('cal-titulo').addEventListener('click', alternarModo);
+        $('cal-modo').addEventListener('click', alternarModo);
+        $('cal-body').addEventListener('click', e => {
+            if (e.target.closest('a')) return;
+            const el = e.target.closest('[data-date]');
+            if (el) abrirDia(el.dataset.date);
+        });
+
+        // --- Imprimir mês ---
+
+        function imprimirMes() {
+            const celula = (ds, slot) => ds.filter(x => x.slot === slot && x.status !== 'recusou')
+                .map(x => `<b>${esc(x.nome)}</b>${effStatus(x) === 'convidado' ? ' <i>(a confirmar)</i>' : ''}${x.tema ? `<br><small>${esc(x.tema)}</small>` : ''}${x.tempo ? `<br><small>${x.tempo} min</small>` : ''}`)
+                .join('<br>') || '—';
+            const linhas = domingosDoMes(calY, calM).map(iso => {
+                const tipo = domTipo(iso);
+                const ds = discDoDia(iso);
+                const nota = domingos[iso]?.nota ? `<br><small>${esc(domingos[iso].nota)}</small>` : '';
+                if (tipo !== 'normal' && !ds.length) {
+                    return `<tr><td>${formatDate(iso)}</td><td colspan="3"><b>${DOM_TIPOS[tipo]}</b>${nota}</td></tr>`;
+                }
+                return `<tr><td>${formatDate(iso)}${tipo !== 'normal' ? `<br><small>${DOM_TIPOS[tipo]}</small>` : ''}${nota}</td><td>${celula(ds, 1)}</td><td>${celula(ds, 2)}</td><td>${celula(ds, 3)}</td></tr>`;
+            }).join('');
+            const titulo = `Discursantes — ${MESES[calM]} de ${calY}`;
+            const w = window.open('', '_blank');
+            if (!w) { showToast('Permita pop-ups neste site para imprimir.', 'error'); return; }
+            w.document.write(`<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>${titulo}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 24px; color: #222; }
+                    h1 { font-size: 18px; margin: 0 0 4px; } p { margin: 0 0 16px; color: #666; font-size: 12px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+                    th, td { border: 1px solid #bbb; padding: 8px; vertical-align: top; text-align: left; }
+                    th { background: #eef0f2; } td:first-child { white-space: nowrap; width: 1%; }
+                    small { color: #555; }
+                </style></head><body>
+                <h1>${titulo}</h1><p>Ala ${esc($('ala').value || '')} · gerado em ${formatDate(hoje())}</p>
+                <table><thead><tr><th>Domingo</th><th>1º orador</th><th>2º orador</th><th>Último orador</th></tr></thead><tbody>${linhas}</tbody></table>
+                <script>window.onload = () => window.print();<\/script></body></html>`);
+            w.document.close();
+        }
+        $('cal-imprimir').addEventListener('click', imprimirMes);
+
+        // --- Modal genérico ---
+
+        function abrirModal(id) { $(id).classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+        function fecharModal(id) {
+            $(id).classList.add('hidden');
+            if (!document.querySelector('.modal-overlay:not(.hidden)')) document.body.style.overflow = '';
+            if (id === 'modal-dia') {
+                // Salva a nota se o modal foi fechado antes do campo perder o foco (ex.: tecla Esc)
+                if (diaAtual && $('dia-nota').value.trim() !== (domingos[diaAtual]?.nota || '')) salvarDomingo();
+                diaAtual = null;
+            }
+            if (id === 'modal-pessoa') pessoaAtual = null;
+        }
+        document.querySelectorAll('.modal-overlay').forEach(ov => {
+            ov.addEventListener('mousedown', e => { if (e.target === ov) fecharModal(ov.id); });
+            ov.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => fecharModal(ov.id)));
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            const abertos = [...document.querySelectorAll('.modal-overlay:not(.hidden)')];
+            if (abertos.length) fecharModal(abertos[abertos.length - 1].id);
+        });
+
+        // --- Modal do domingo ---
+
+        let diaAtual = null;
+        let discEditId = null;
+
+        function abrirDia(date) {
+            diaAtual = date;
+            resetDiscForm();
+            const tipo = domTipo(date);
+            $('dia-tipo').value = tipo;
+            $('dia-nota').value = domingos[date]?.nota || '';
+            renderDia();
+            abrirModal('modal-dia');
+        }
+
+        function renderDia() {
+            const d = parseISO(diaAtual);
+            $('dia-titulo').textContent = `Domingo, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} de ${d.getFullYear()}`;
+            const ds = discDoDia(diaAtual);
+            if (!discEditId && !$('disc-nome').value.trim()) sugerirOrdem();
+            const tempo = ds.filter(x => x.status !== 'recusou').reduce((s, x) => s + (+x.tempo || 0), 0);
+            $('dia-tempo').innerHTML = tempo ? `<i class="far fa-clock"></i> ${tempo} min no total` : '';
+            const tipo = domTipo(diaAtual);
+            const avisoTipo = tipo !== 'normal' && ds.length
+                ? `<div class="aviso warn" style="margin-bottom:8px;">Este domingo está marcado como <b>${DOM_TIPOS[tipo]}</b>, mas tem discursantes.</div>` : '';
+            $('dia-lista').innerHTML = avisoTipo + (ds.length ? ds.map(x => `
+                <div class="dia-item">
+                    <div class="dia-info">
+                        <div class="slot">${SLOTS[x.slot] || ''}${x.tempo ? ` · ${x.tempo} min` : ''}</div>
+                        <div style="font-weight:600;${x.status === 'recusou' ? 'text-decoration:line-through;opacity:.6' : ''}">${esc(x.nome)}</div>
+                        <div class="tema">${esc(x.tema || 'Sem tema definido')} ${linkFonte(x.fonte)}</div>
+                    </div>
+                    <span class="st-badge st-${effStatus(x)}">${STATUS[effStatus(x)]}</span>
+                    <div class="dia-acoes">
+                        <button class="btn btn-secondary btn-icon" data-edit="${esc(x.id)}" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-icon" data-del="${esc(x.id)}" title="Remover"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`).join('') : '<p class="muted">Nenhum discursante neste domingo ainda.</p>');
+        }
+
+        function salvarDomingo() {
+            if (!diaAtual) return;
+            const tipo = $('dia-tipo').value;
+            const nota = $('dia-nota').value.trim();
+            const padrao = parseISO(diaAtual).getDate() <= 7 ? 'jejum' : 'normal';
+            const ref = colDom.doc(diaAtual);
+            const p = (tipo === padrao && !nota) ? ref.delete() : ref.set({ tipo, nota });
+            p.catch(err => { console.error(err); showToast('Erro ao salvar o tipo do domingo.', 'error'); });
+        }
+        $('dia-tipo').addEventListener('change', salvarDomingo);
+        $('dia-nota').addEventListener('change', salvarDomingo);
+
+        // Sugere a próxima ordem livre (1º, 2º, último)
+        function sugerirOrdem() {
+            const usados = new Set(diaAtual ? discDoDia(diaAtual).filter(x => x.status !== 'recusou').map(x => x.slot) : []);
+            $('disc-slot').value = [1, 2, 3].find(s => !usados.has(s)) || 3;
+        }
+
+        function resetDiscForm() {
+            discEditId = null;
+            $('disc-nome').value = '';
+            $('disc-tema').value = '';
+            $('disc-fonte').value = '';
+            $('disc-tempo').value = '';
+            $('disc-status').value = 'convidado';
+            sugerirOrdem();
+            $('disc-form-titulo').textContent = 'Adicionar discursante';
+            $('disc-salvar-txt').textContent = 'Adicionar';
+            $('disc-cancelar').classList.add('hidden');
+            $('disc-avisos').innerHTML = '';
+        }
+
+        function editarDisc(id) {
+            const x = discursos.find(d => d.id === id);
+            if (!x) return;
+            discEditId = id;
+            $('disc-nome').value = x.nome || '';
+            $('disc-slot').value = x.slot || 1;
+            $('disc-status').value = x.status || 'convidado';
+            $('disc-tempo').value = x.tempo || '';
+            $('disc-tema').value = x.tema || '';
+            $('disc-fonte').value = x.fonte || '';
+            $('disc-form-titulo').textContent = 'Editar discursante';
+            $('disc-salvar-txt').textContent = 'Salvar alterações';
+            $('disc-cancelar').classList.remove('hidden');
+            atualizarAvisos();
+            $('disc-nome').focus();
+        }
+
+        function atualizarAvisos() {
+            const avisos = [];
+            const nome = $('disc-nome').value.trim();
+            const tema = $('disc-tema').value.trim();
+            if (nome) {
+                const o = findOrador(nome);
+                if (o) {
+                    const info = infoOrador(o);
+                    const anteriores = info.feitos.filter(d => d.data < diaAtual && d.id !== discEditId);
+                    const ult = anteriores[0]?.data;
+                    if (o.indisponivel) avisos.push(['erro', `${esc(o.nome)} está marcado como indisponível${o.motivo ? ` (${esc(o.motivo)})` : ''}.`]);
+                    if (!ult) avisos.push(['', `${esc(o.nome)} nunca discursou.`]);
+                    else {
+                        const recente = diasEntre(ult, diaAtual) < 90;
+                        avisos.push([recente ? 'warn' : '', `Último discurso: ${formatDate(ult)} (${tempoTxt(ult)}) · ${anteriores.length} discurso(s) no total.`]);
+                    }
+                } else {
+                    avisos.push(['', 'Pessoa fora da lista de oradores (ex.: visitante). Será salvo só com o nome.']);
+                }
+                const mesmoDia = discDoDia(diaAtual).find(d => d.id !== discEditId && d.status !== 'recusou' && norm(d.nome).trim() === norm(nome).trim());
+                if (mesmoDia) avisos.push(['warn', 'Essa pessoa já está neste domingo.']);
+            }
+            if (tema.length >= 4) {
+                const t = norm(tema).trim();
+                const parecidos = discursos.filter(d => d.id !== discEditId && d.tema && d.status !== 'recusou'
+                    && diasEntre(d.data, diaAtual) <= 183
+                    && (norm(d.tema).trim() === t || (t.length >= 8 && (norm(d.tema).includes(t) || t.includes(norm(d.tema).trim())))))
+                    .sort((a, b) => b.data.localeCompare(a.data));
+                if (parecidos.length) {
+                    const p = parecidos[0];
+                    avisos.push(['warn', `Tema parecido usado em ${formatDate(p.data)} por ${esc(p.nome)}: “${esc(p.tema)}”${parecidos.length > 1 ? ` (e mais ${parecidos.length - 1})` : ''}.`]);
+                }
+            }
+            $('disc-avisos').innerHTML = avisos.map(([cls, txt]) => `<div class="aviso ${cls}">${txt}</div>`).join('');
+        }
+        ['disc-nome', 'disc-tema'].forEach(id => $(id).addEventListener('input', atualizarAvisos));
+
+        function salvarDiscurso() {
+            if (!diaAtual) return;
+            const nomeDigitado = $('disc-nome').value.trim().replace(/\s+/g, ' ');
+            if (!nomeDigitado) { showToast('Informe o nome do orador.', 'error'); $('disc-nome').focus(); return; }
+            const o = findOrador(nomeDigitado);
+            const dados = {
+                data: diaAtual,
+                nome: o ? o.nome : nomeDigitado,
+                oradorId: o ? o.id : null,
+                slot: +$('disc-slot').value,
+                status: $('disc-status').value,
+                tempo: $('disc-tempo').value ? +$('disc-tempo').value : null,
+                tema: $('disc-tema').value.trim(),
+                fonte: $('disc-fonte').value.trim(),
+                updatedAt: TS()
+            };
+            const ref = discEditId ? colDisc.doc(discEditId) : colDisc.doc();
+            if (!discEditId) dados.createdAt = TS();
+            pendingSync.add(diaAtual);
+            ref.set(dados, { merge: true }).catch(err => { console.error(err); showToast('Erro ao salvar discursante.', 'error', 5000); });
+            showToast(discEditId ? 'Discursante atualizado.' : 'Discursante adicionado.');
+            resetDiscForm();
+        }
+
+        function removerDisc(id) {
+            const x = discursos.find(d => d.id === id);
+            if (!x) return;
+            if (!confirm(`Remover ${x.nome} de ${formatDate(x.data)}?\n\nSe a pessoa só recusou, prefira editar e marcar "Recusou" para manter o histórico.`)) return;
+            pendingSync.add(x.data);
+            colDisc.doc(id).delete().catch(err => { console.error(err); showToast('Erro ao remover.', 'error'); });
+            if (discEditId === id) resetDiscForm();
+        }
+
+        $('disc-salvar').addEventListener('click', salvarDiscurso);
+        $('disc-cancelar').addEventListener('click', resetDiscForm);
+        ['disc-nome', 'disc-tema', 'disc-fonte', 'disc-tempo'].forEach(id => $(id).addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); salvarDiscurso(); }
+        }));
+        $('dia-lista').addEventListener('click', e => {
+            const ed = e.target.closest('[data-edit]');
+            const del = e.target.closest('[data-del]');
+            if (ed) editarDisc(ed.dataset.edit);
+            else if (del) removerDisc(del.dataset.del);
+        });
+
+        // --- Lista de oradores ---
+
+        function renderOradores() {
+            const q = norm($('or-busca').value.trim());
+            const filtro = $('or-filtro').value;
+            const tipo = $('or-tipo').value;
+            const ano = String(new Date().getFullYear());
+            const infos = oradores.map(o => ({ o, ...infoOrador(o) }));
+
+            // Estatísticas gerais
+            const ativos = infos.filter(x => !x.o.indisponivel);
+            const feitosAno = discursos.filter(d => contaComoFeito(d) && d.data.startsWith(ano));
+            const jovensAno = feitosAno.filter(d => oradorPorId(d.oradorId)?.tipo === 'jovem').length;
+            $('or-stats').innerHTML = `
+                <div class="stat"><b>${ativos.length}</b><span>pessoas disponíveis</span></div>
+                <div class="stat"><b>${feitosAno.length}</b><span>discursos em ${ano}</span></div>
+                <div class="stat"><b>${ativos.filter(x => !x.ultimo).length}</b><span>nunca discursaram</span></div>
+                <div class="stat"><b>${jovensAno}</b><span>discursos de jovens em ${ano}</span></div>`;
+
+            let lista = infos.filter(x => (!q || norm(x.o.nome).includes(q)) && (!tipo || x.o.tipo === tipo));
+            if (filtro === 'indisp') lista = lista.filter(x => x.o.indisponivel);
+            else if (!q) lista = lista.filter(x => !x.o.indisponivel); // na busca por nome aparece todo mundo
+            if (filtro === 'nunca') lista = lista.filter(x => !x.ultimo);
+            if (filtro === '6m') lista = lista.filter(x => !x.ultimo || mesesDesde(x.ultimo) >= 6);
+            if (filtro === '12m') lista = lista.filter(x => !x.ultimo || mesesDesde(x.ultimo) >= 12);
+
+            $('or-count').textContent = `(${lista.length}${lista.length !== oradores.length ? ' de ' + oradores.length : ''})`;
+
+            if (!oradores.length) {
+                $('or-lista').innerHTML = '<p class="empty-msg">Nenhum orador cadastrado. Use "Adicionar" ou "Colar lista".</p>';
+                return;
+            }
+            if (!lista.length) {
+                $('or-lista').innerHTML = '<p class="empty-msg">Ninguém encontrado com esse filtro.</p>';
+                return;
+            }
+
+            const item = x => {
+                const info = x.ultimo
+                    ? `<div class="or-info${mesesDesde(x.ultimo) >= 12 ? ' alerta' : ''}">Último: ${formatDate(x.ultimo)} · ${tempoTxt(x.ultimo)} · ${x.feitos.length} discurso${x.feitos.length > 1 ? 's' : ''}</div>`
+                    : '<div class="or-info">Nunca discursou</div>';
+                return `<div class="or-item${x.o.indisponivel ? ' indisp' : ''}" data-id="${esc(x.o.id)}">
+                    <div class="or-nome">${esc(x.o.nome)}
+                        <span class="tipo-badge tipo-${esc(x.o.tipo || 'adulto')}">${TIPOS[x.o.tipo] || 'Adulto'}</span>
+                        ${x.o.indisponivel ? `<span class="tipo-badge tipo-indisp">Indisponível${x.o.motivo ? ': ' + esc(x.o.motivo) : ''}</span>` : ''}
+                    </div>${info}</div>`;
+            };
+
+            const nunca = lista.filter(x => !x.ultimo);
+            const ja = lista.filter(x => x.ultimo).sort((a, b) => a.ultimo.localeCompare(b.ultimo));
+            let html = '';
+            if (nunca.length) html += `<div class="or-grupo">Nunca discursaram (${nunca.length})</div>` + nunca.map(item).join('');
+            if (ja.length) html += `<div class="or-grupo">Há mais tempo sem discursar primeiro (${ja.length})</div>` + ja.map(item).join('');
+            $('or-lista').innerHTML = html;
+        }
+
+        ['or-busca', 'or-filtro', 'or-tipo'].forEach(id => $(id).addEventListener('input', renderOradores));
+        $('or-lista').addEventListener('click', e => {
+            const el = e.target.closest('.or-item');
+            if (el) abrirPessoa(el.dataset.id);
+        });
+
+        // --- Modal da pessoa ---
+
+        let pessoaAtual = null;   // id, ou '' para nova
+
+        function abrirPessoa(id) {
+            const o = id ? oradorPorId(id) : null;
+            pessoaAtual = o ? o.id : '';
+            $('p-titulo').textContent = o ? o.nome : 'Novo orador';
+            $('p-nome').value = o?.nome || '';
+            $('p-tipo').value = o?.tipo || 'adulto';
+            $('p-indisp').checked = !!o?.indisponivel;
+            $('p-motivo').value = o?.motivo || 'Pediu pausa';
+            $('p-obs').value = o?.obs || '';
+            $('p-motivo-wrap').classList.toggle('hidden', !o?.indisponivel);
+            $('p-excluir').classList.toggle('hidden', !o);
+            renderHistorico();
+            abrirModal('modal-pessoa');
+            if (!o) $('p-nome').focus();
+        }
+
+        function renderHistorico() {
+            const o = pessoaAtual ? oradorPorId(pessoaAtual) : null;
+            if (!o) { $('p-historico').innerHTML = ''; return; }
+            const { ds, feitos, ultimo } = infoOrador(o);
+            const ano = String(new Date().getFullYear());
+            const noAno = feitos.filter(d => d.data.startsWith(ano)).length;
+            const resumo = `
+                <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+                    <div class="stat"><b>${feitos.length}</b><span>discursos no total</span></div>
+                    <div class="stat"><b>${noAno}</b><span>em ${ano}</span></div>
+                    <div class="stat"><b style="font-size:1rem;">${ultimo ? formatDate(ultimo) : '—'}</b><span>${ultimo ? tempoTxt(ultimo) : 'nunca discursou'}</span></div>
+                </div>`;
+            const tabela = ds.length
+                ? `<table class="hist-table"><thead><tr><th>Data</th><th>Tema</th><th>Ordem</th><th>Situação</th></tr></thead><tbody>
+                    ${ds.map(d => `<tr data-date="${d.data}" title="Abrir este domingo">
+                        <td style="white-space:nowrap">${formatDate(d.data)}</td>
+                        <td>${esc(d.tema || '—')}</td>
+                        <td style="white-space:nowrap">${SLOTS[d.slot] || ''}</td>
+                        <td><span class="st-badge st-${effStatus(d)}">${STATUS[effStatus(d)]}</span></td>
+                    </tr>`).join('')}</tbody></table>`
+                : '<p class="muted">Nenhum discurso registrado.</p>';
+            $('p-historico').innerHTML = `<strong style="color:var(--primary-color);">Histórico</strong>${resumo}${tabela}`;
+        }
+
+        $('p-indisp').addEventListener('change', () => $('p-motivo-wrap').classList.toggle('hidden', !$('p-indisp').checked));
+        $('p-historico').addEventListener('click', e => {
+            const tr = e.target.closest('tr[data-date]');
+            if (!tr) return;
+            const d = parseISO(tr.dataset.date);
+            calY = d.getFullYear(); calM = d.getMonth();
+            renderCalendar();
+            fecharModal('modal-pessoa');
+            abrirDia(tr.dataset.date);
+        });
+
+        function salvarPessoa() {
+            const nome = $('p-nome').value.trim().replace(/\s+/g, ' ');
+            if (!nome) { showToast('Informe o nome.', 'error'); $('p-nome').focus(); return; }
+            const dup = findOrador(nome);
+            if (dup && dup.id !== pessoaAtual) { showToast('Já existe um orador com esse nome.', 'error'); return; }
+            const indisp = $('p-indisp').checked;
+            const dados = {
+                nome,
+                tipo: $('p-tipo').value,
+                indisponivel: indisp,
+                motivo: indisp ? $('p-motivo').value : '',
+                obs: $('p-obs').value.trim(),
+                updatedAt: TS()
+            };
+            const antigo = pessoaAtual ? oradorPorId(pessoaAtual) : null;
+            const ref = pessoaAtual ? colOr.doc(pessoaAtual) : colOr.doc();
+            if (!pessoaAtual) dados.createdAt = TS();
+
+            const batch = db.batch();
+            batch.set(ref, dados, { merge: true });
+            // Nova pessoa: liga discursos antigos digitados com o mesmo nome
+            // Nome alterado: atualiza o nome nos discursos dela
+            discursos.forEach(d => {
+                const ligado = antigo ? d.oradorId === antigo.id : (!d.oradorId && norm(d.nome).trim() === norm(nome).trim());
+                if (!ligado) return;
+                const upd = {};
+                if (!antigo) upd.oradorId = ref.id;
+                if (d.nome !== nome) upd.nome = nome;
+                if (Object.keys(upd).length) {
+                    batch.set(colDisc.doc(d.id), upd, { merge: true });
+                    if (upd.nome && d.data >= hoje()) pendingSync.add(d.data);
+                }
+            });
+            batch.commit().catch(err => { console.error(err); showToast('Erro ao salvar orador.', 'error', 5000); });
+            showToast(pessoaAtual ? 'Orador atualizado.' : 'Orador adicionado.');
+            fecharModal('modal-pessoa');
+        }
+
+        function excluirPessoa() {
+            const o = oradorPorId(pessoaAtual);
+            if (!o) return;
+            if (!confirm(`Excluir ${o.nome} da lista?\n\nO histórico de discursos continua salvo com o nome. Se a pessoa só não pode discursar agora, prefira marcar "Indisponível".`)) return;
+            const batch = db.batch();
+            batch.delete(colOr.doc(o.id));
+            discursos.filter(d => d.oradorId === o.id).forEach(d => batch.set(colDisc.doc(d.id), { oradorId: null }, { merge: true }));
+            batch.commit().catch(err => { console.error(err); showToast('Erro ao excluir.', 'error'); });
+            showToast('Orador excluído.');
+            fecharModal('modal-pessoa');
+        }
+
+        $('or-add').addEventListener('click', () => abrirPessoa(''));
+        $('p-salvar').addEventListener('click', salvarPessoa);
+        $('p-excluir').addEventListener('click', excluirPessoa);
+        $('p-nome').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); salvarPessoa(); } });
+
+        // --- Colar lista ---
+
+        $('or-colar').addEventListener('click', () => {
+            $('colar-texto').value = '';
+            $('colar-tipo').value = 'adulto';
+            abrirModal('modal-colar');
+            $('colar-texto').focus();
+        });
+
+        $('colar-salvar').addEventListener('click', async () => {
+            const tipo = $('colar-tipo').value;
+            const vistos = new Set(oradores.map(o => norm(o.nome).trim()));
+            const novos = [];
+            let repetidos = 0;
+            $('colar-texto').value.split('\n')
+                .map(s => s.replace(/^[\s\-•*\d.)]+/, '').trim().replace(/\s+/g, ' '))
+                .filter(Boolean)
+                .forEach(nome => {
+                    const n = norm(nome);
+                    if (vistos.has(n)) { repetidos++; return; }
+                    vistos.add(n);
+                    novos.push(nome);
+                });
+            if (!novos.length) { showToast(repetidos ? 'Todos esses nomes já estão na lista.' : 'Cole pelo menos um nome.', 'error'); return; }
+            try {
+                for (let i = 0; i < novos.length; i += 400) {
+                    const batch = db.batch();
+                    novos.slice(i, i + 400).forEach(nome => {
+                        const ref = colOr.doc();
+                        batch.set(ref, { nome, tipo, indisponivel: false, motivo: '', obs: '', createdAt: TS(), updatedAt: TS() });
+                        // Liga discursos que já existiam com esse nome
+                        discursos.filter(d => !d.oradorId && norm(d.nome).trim() === norm(nome)).forEach(d => batch.set(colDisc.doc(d.id), { oradorId: ref.id }, { merge: true }));
+                    });
+                    batch.commit().catch(err => { console.error(err); showToast('Erro ao adicionar a lista.', 'error', 5000); });
+                }
+                showToast(`${novos.length} adicionado(s)${repetidos ? `, ${repetidos} já existia(m)` : ''}.`);
+                fecharModal('modal-colar');
+            } catch (err) {
+                console.error(err);
+                showToast('Erro ao adicionar a lista.', 'error');
+            }
+        });
+
+        // =====================================================================
+        // MODO LEITURA DE ATA
+        // =====================================================================
+
+        let leitorId = null;
+        let leitorDados = null;
+        const FONTES_LEITOR = [1, 1.15, 1.3, 0.9];
+        let fonteLeitor = 1;
+        try { fonteLeitor = +localStorage.getItem('fonteLeitor') || 1; } catch (e) {}
+        $('leitor').style.setProperty('--lf', fonteLeitor);
+
+        function dataPorExtenso(iso) {
+            if (!iso) return 'Sem data';
+            const d = parseISO(iso);
+            const dia = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][d.getDay()];
+            return `${dia}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} de ${d.getFullYear()}`;
+        }
+
+        function abrirLeitor(id) {
+            let ata = null;
+            if (id) {
+                ata = atasCache.find(a => a.id === id);
+            } else if ($('ata-id').value || $('data').value) {
+                // Ata aberta no formulário: mostra o que está na tela, mesmo sem salvar
+                ata = { ...collectForm(), id: $('ata-id').value || null, _naoSalva: isDirty || !$('ata-id').value };
+            } else {
+                ata = atasCache[0];
+            }
+            if (!ata) { showToast('Ainda não há atas para ler.', 'error'); return; }
+            leitorId = ata.id || null;
+            leitorDados = ata;
+            renderLeitor();
+            if ($('leitor').classList.contains('hidden')) {
+                $('leitor').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                // O botão "voltar" do celular fecha a leitura em vez de sair do app
+                try { history.pushState({ leitor: true }, ''); } catch (e) {}
+            }
+            $('leitor-conteudo').scrollTop = 0;
+        }
+
+        function fecharLeitor(porVoltar) {
+            if ($('leitor').classList.contains('hidden')) return;
+            $('leitor').classList.add('hidden');
+            if (!document.querySelector('.modal-overlay:not(.hidden)')) document.body.style.overflow = '';
+            if (!porVoltar && history.state?.leitor) history.back();
+        }
+
+        function renderLeitor() {
+            const a = leitorDados;
+            const isTest = a.tipo_ata === 'testemunho';
+            const v = x => String(x ?? '').trim();
+            const vazio = '<span class="lt-vazio">—</span>';
+            const campo = (l, val) => `<div class="lt-campo"><span class="lt-l">${l}</span><span class="lt-v">${v(val) ? esc(v(val)) : vazio}</span></div>`;
+            const bloco = (l, val) => v(val) ? `<div class="lt-bloco"><span class="lt-l">${l}</span><div class="lt-v">${esc(v(val))}</div></div>` : '';
+            const secao = (t, html) => `<div class="lt-secao"><h3>${t}</h3>${html}</div>`;
+
+            // Tema e tempo vêm do controle de discursantes
+            const orador = (rotulo, nome, slot) => {
+                const extras = discursos
+                    .filter(d => d.data === a.data && d.slot === slot && vaiParaAta(d) && (d.tema || d.tempo))
+                    .map(d => `<div class="lt-tema">${d.tema ? esc(d.tema) : ''}${d.tema && d.tempo ? ' · ' : ''}${d.tempo ? d.tempo + ' min' : ''}</div>`)
+                    .join('');
+                return `<div class="lt-orador"><div class="lt-l">${rotulo}</div><div class="lt-nome">${v(nome) ? esc(v(nome)) : vazio}</div>${extras}</div>`;
+            };
+
+            $('leitor-tipo').textContent = (isTest ? 'Reunião de Testemunho' : 'Reunião Sacramental') + (a._naoSalva ? ' · não salva' : '');
+            $('leitor-data').textContent = dataPorExtenso(a.data);
+
+            let html = '';
+            html += secao('Informações gerais',
+                campo('Presidida por', a.presidida_por) + campo('Dirigida por', a.dirigida_por) +
+                campo('Frequência', a.frequencia) + campo('Regente', a.regente) +
+                campo('Pianista/Organista', a.pianista) + campo('Ala', [a.ala, a.estaca && `Estaca ${a.estaca}`].filter(Boolean).join(' · ')));
+            html += secao('Abertura',
+                bloco('Boas-vindas / Reconhecimentos', a.boas_vindas) + bloco('Anúncios', a.anuncios) +
+                campo('Hino de abertura', hymn(a.hino_abertura, a.hino_abertura_num)) + campo('1ª oração', a.primeira_oracao));
+            html += secao('Ações', v(a.acoes) ? `<div class="lt-bloco"><div class="lt-v">${esc(v(a.acoes))}</div></div>` : '<div class="lt-vazio">Nenhuma ordenança, desobrigação ou apoio.</div>');
+            html += secao('Sacramento', campo('Hino sacramental', hymn(a.hino_sacramental, a.hino_sacramental_num)));
+            if (isTest) {
+                const nomes = v(a.testemunhos_lista).split('\n').map(s => s.trim()).filter(Boolean);
+                html += secao(`Testemunhos (${nomes.length})`, nomes.length
+                    ? `<div class="lt-nomes">${nomes.map(n => `<div>${esc(n)}</div>`).join('')}</div>`
+                    : '<div class="lt-vazio">Nenhum nome registrado.</div>');
+            } else {
+                html += secao('Mensagens',
+                    orador('1º orador', a.primeiro_orador, 1) + orador('2º orador', a.segundo_orador, 2) +
+                    `<div class="lt-orador"><div class="lt-l">Interlúdio musical</div><div>${v(hymn(a.interludio, a.interludio_num)) ? esc(hymn(a.interludio, a.interludio_num)) : vazio}</div></div>` +
+                    orador('Último orador', a.ultimo_orador, 3) + bloco('Observações', a.observacoes));
+            }
+            html += secao('Encerramento', campo('Último hino', hymn(a.hino_encerramento, a.hino_encerramento_num)) + campo('Última oração', a.ultima_oracao));
+            $('leitor-conteudo').innerHTML = `<div class="leitor-pagina">${html}</div>`;
+
+            // Navegação: a lista vai da mais recente para a mais antiga
+            const i = leitorId ? atasCache.findIndex(x => x.id === leitorId) : -1;
+            $('leitor-ant').disabled = i < 0 || i >= atasCache.length - 1;
+            $('leitor-prox').disabled = i <= 0;
+        }
+
+        function navegarLeitor(passo) {
+            const i = leitorId ? atasCache.findIndex(x => x.id === leitorId) : -1;
+            const alvo = atasCache[i + passo];
+            if (i < 0 || !alvo) return;
+            leitorId = alvo.id;
+            leitorDados = alvo;
+            renderLeitor();
+            $('leitor-conteudo').scrollTop = 0;
+        }
+
+        $('btn-ler').addEventListener('click', () => abrirLeitor(null));
+        $('leitor-fechar').addEventListener('click', () => fecharLeitor(false));
+        $('leitor-ant').addEventListener('click', () => navegarLeitor(1));
+        $('leitor-prox').addEventListener('click', () => navegarLeitor(-1));
+        $('leitor-fonte').addEventListener('click', () => {
+            fonteLeitor = FONTES_LEITOR[(FONTES_LEITOR.indexOf(fonteLeitor) + 1) % FONTES_LEITOR.length];
+            $('leitor').style.setProperty('--lf', fonteLeitor);
+            try { localStorage.setItem('fonteLeitor', fonteLeitor); } catch (e) {}
+            showToast(`Letra em ${Math.round(fonteLeitor * 100)}%`, 'info', 1200);
+        });
+        $('leitor-editar').addEventListener('click', () => {
+            const id = leitorId;
+            fecharLeitor(false);
+            mostrarTela('atas');
+            if (id) editAta(id); else mostrarMTab('form');
+        });
+        window.addEventListener('popstate', () => fecharLeitor(true));
+        document.addEventListener('keydown', e => {
+            if ($('leitor').classList.contains('hidden')) return;
+            if (e.key === 'Escape') fecharLeitor(false);
+            else if (e.key === 'ArrowLeft') navegarLeitor(1);
+            else if (e.key === 'ArrowRight') navegarLeitor(-1);
+        });
+        // Deslizar o dedo para o lado troca de ata
+        let toqueX = 0, toqueY = 0;
+        $('leitor-conteudo').addEventListener('touchstart', e => { toqueX = e.touches[0].clientX; toqueY = e.touches[0].clientY; }, { passive: true });
+        $('leitor-conteudo').addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - toqueX, dy = e.changedTouches[0].clientY - toqueY;
+            if (Math.abs(dx) > 70 && Math.abs(dy) < 50) navegarLeitor(dx > 0 ? 1 : -1);
+        }, { passive: true });
+
+        // --- Abas do celular (lista de atas / formulário) ---
+
+        function mostrarMTab(t) {
+            document.body.classList.toggle('mtab-lista', t === 'lista');
+            document.body.classList.toggle('mtab-form', t === 'form');
+            document.querySelectorAll('[data-mtab]').forEach(b => b.classList.toggle('active', b.dataset.mtab === t));
+            if (window.innerWidth <= 1024) window.scrollTo({ top: 0 });
+        }
+        document.querySelectorAll('[data-mtab]').forEach(b => b.addEventListener('click', () => mostrarMTab(b.dataset.mtab)));
+        mostrarMTab('lista');
+
+        // =====================================================================
+        // APP INSTALÁVEL (PWA)
+        // =====================================================================
+
+        let eventoInstalar = null;
+        const ehStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+        const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+        function bannerDispensado() {
+            try { return Date.now() - (+localStorage.getItem('pwaDispensado') || 0) < 3 * 864e5; } catch (e) { return false; }
+        }
+        function mostrarBanner() {
+            if (ehStandalone() || bannerDispensado()) return;
+            $('install-banner').classList.remove('hidden');
+        }
+        function dispensarBanner() {
+            $('install-banner').classList.add('hidden');
+            try { localStorage.setItem('pwaDispensado', Date.now()); } catch (e) {}
+        }
+        async function instalarApp() {
+            if (!eventoInstalar) return;
+            eventoInstalar.prompt();
+            const { outcome } = await eventoInstalar.userChoice;
+            eventoInstalar = null;
+            $('btn-instalar-header').classList.add('hidden');
+            if (outcome === 'accepted') $('install-banner').classList.add('hidden');
+            else dispensarBanner();
+        }
+
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service worker:', err)));
+        }
+
+        // Chrome, Edge e Android: o navegador avisa quando o app pode ser instalado
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            eventoInstalar = e;
+            $('btn-instalar-header').classList.remove('hidden');
+            mostrarBanner();
+        });
+        window.addEventListener('appinstalled', () => {
+            eventoInstalar = null;
+            $('install-banner').classList.add('hidden');
+            $('btn-instalar-header').classList.add('hidden');
+            showToast('App instalado! Agora ele abre pela tela inicial.');
+        });
+
+        // iPhone/iPad: o Safari não tem botão de instalar, então mostra o passo a passo
+        if (ehIOS && !ehStandalone()) {
+            $('ib-msg').innerHTML = 'No Safari, toque em <i class="fas fa-arrow-up-from-bracket"></i> <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.';
+            $('ib-instalar').textContent = 'Entendi';
+            setTimeout(mostrarBanner, 1500);
+        }
+        $('ib-instalar').addEventListener('click', () => { if (eventoInstalar) instalarApp(); else dispensarBanner(); });
+        $('ib-depois').addEventListener('click', dispensarBanner);
+        $('btn-instalar-header').addEventListener('click', instalarApp);
+
+        // --- Troca de tela ---
+
+        function mostrarTela(v) {
+            $('view-atas').classList.toggle('hidden', v !== 'atas');
+            $('view-disc').classList.toggle('hidden', v !== 'disc');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+            try { localStorage.setItem('telaAtual', v); } catch (e) {}
+        }
+        document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => mostrarTela(b.dataset.view)));
+        try { if (localStorage.getItem('telaAtual') === 'disc') mostrarTela('disc'); } catch (e) {}
+
+        // --- Eventos ---
+
+        tipoAtaSelect.addEventListener('change', toggleSections);
+
+        form.addEventListener('input', e => {
+            setDirty(true);
+            if (e.target.tagName === 'TEXTAREA') autoGrow(e.target);
+        });
+        form.addEventListener('submit', e => { e.preventDefault(); saveAta(); });
+
+        $('btn-nova').addEventListener('click', clearForm);
+        $('btn-salvar').addEventListener('click', e => { e.preventDefault(); saveAta(); });
+
+        // Gera o PDF do que está na tela, salvando antes se houver alterações
+        $('btn-pdf').addEventListener('click', () => {
+            const data = collectForm();
+            if (!data.data) { showToast('Preencha a data antes de gerar o PDF.', 'error'); $('data').focus(); return; }
+            if (isDirty || !$('ata-id').value) { if (!saveAta()) return; }
+            generatePDF(data);
+        });
+
+        $('btn-exportar').addEventListener('click', exportBackup);
+        $('btn-importar-trigger').addEventListener('click', () => $('import-file').click());
+        $('import-file').addEventListener('change', importBackup);
+
+        $('search-input').addEventListener('input', e => {
+            currentFilter = e.target.value;
+            renderList();
+        });
+
+        listContainer.addEventListener('click', e => {
+            const item = e.target.closest('.ata-item');
+            if (!item) return;
+            const action = e.target.closest('[data-action]')?.dataset.action;
+            const id = item.dataset.id;
+            if (action === 'pdf') {
+                const ata = atasCache.find(a => a.id === id);
+                if (ata) generatePDF(ata);
+            } else if (action === 'ler') {
+                abrirLeitor(id);
+            } else if (action === 'delete') {
+                deleteAta(id);
+            } else {
+                editAta(id);
+            }
+        });
+
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                if (!$('view-atas').classList.contains('hidden')) saveAta();
+            }
+        });
+
+        window.addEventListener('beforeunload', e => {
+            if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+        });
+        window.addEventListener('online', () => updateStatus('saving'));
+        window.addEventListener('offline', () => { updateStatus('offline'); statusText.textContent = 'Sem internet: alterações ficam salvas no aparelho'; });
+
+        loadAtas();
+        loadDiscursantes();
+        toggleSections();
+    </script>
+</body>
+</html>
