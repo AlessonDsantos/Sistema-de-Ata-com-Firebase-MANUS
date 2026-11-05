@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Quem é quem ----------
+    function logado() { return request.auth != null; }
+
+    // Administrador principal (conta Google verificada)
+    function ehSuper() {
+      return logado()
+        && request.auth.token.email == 'alessonplayer@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function meuDoc() { return /databases/$(database)/documents/usuarios/$(request.auth.uid); }
+    function perfil() { return get(meuDoc()).data; }
+    function aprovado() { return logado() && exists(meuDoc()) && perfil().status == 'aprovado'; }
+    function tem(papel) { return ehSuper() || (aprovado() && perfil().papeis.hasAny([papel])); }
+
+    function bispado() { return tem('bispado'); }
+    function secretaria() { return tem('bispado') || tem('secretaria'); }
+    function musica() { return secretaria() || tem('musica'); }
+    function editaOrg(org) {
+      return secretaria() || (tem('editor') && perfil().orgs.hasAny([org]));
+    }
+
+    // ---------- Atas e discursantes: bispado e secretaria ----------
+    match /atasSacramentais/{id} { allow read, write: if secretaria(); }
+    match /oradores/{id}         { allow read, write: if secretaria(); }
+    match /discursos/{id}        { allow read, write: if secretaria(); }
+    match /domingos/{id}         { allow read, write: if secretaria(); }
+
+    // ---------- Hinos: líder de música, secretaria e bispado ----------
+    // temasSemana tem só os temas (sem nomes) e é mantida pela secretaria
+    match /temasSemana/{dia} {
+      allow read: if musica();
+      allow write: if secretaria();
+    }
+    match /hinos/{dia} {
+      allow read: if musica();
+      allow create, update: if musica() && request.resource.data.data == dia;
+      allow delete: if musica();
+    }
+
+    // ---------- Agenda: todos leem; cada organização edita a sua ----------
+    // O ID do documento é a data (AAAA-MM-DD), então só existe uma atividade por dia.
+    match /agenda/{dia} {
+      function valida() {
+        let d = request.resource.data;
+        return d.data == dia
+          && d.titulo is string && d.titulo.size() > 0 && d.titulo.size() <= 120
+          && d.descricao is string && d.descricao.size() <= 2000
+          && d.local is string && d.local.size() <= 150;
+      }
+      allow read: if true;
+      allow create: if editaOrg(request.resource.data.org) && valida();
+      allow update: if editaOrg(resource.data.org) && editaOrg(request.resource.data.org) && valida();
+      allow delete: if editaOrg(resource.data.org);
+    }
+
+    // ---------- Usuários ----------
+    match /usuarios/{uid} {
+      allow read: if (logado() && request.auth.uid == uid) || bispado();
+
+      // Cada pessoa cria o próprio cadastro, sempre como "pendente" e sem acessos
+      allow create: if logado() && request.auth.uid == uid && (
+        ehSuper() || (
+          request.resource.data.status == 'pendente'
+          && request.resource.data.papeis.size() == 0
+          && request.resource.data.orgs.size() == 0
+        )
+      );
+
+      // O bispado aprova e muda acessos; a própria pessoa só atualiza nome, foto e último acesso
+      allow update: if bispado() || (
+        logado() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome', 'foto', 'ultimoAcesso'])
+      );
+      allow delete: if bispado();
+    }
+
+    // Qualquer outra coleção: bloqueada
+  }
+}
