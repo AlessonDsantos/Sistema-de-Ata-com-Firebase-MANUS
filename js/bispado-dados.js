@@ -154,7 +154,9 @@ export function salvarEntrevista(id, dados) {
 // resultado: 'aceitou' | 'recusou' | null
 export function concluirEntrevista(e, resultado) {
     const batch = db.batch();
-    batch.set(col.entrevistas.doc(e.id), { status: 'realizada', realizadaEm: hoje(), resultado: resultado || '', updatedAt: TS() }, { merge: true });
+    // Se estava marcada para um dia que já passou, conta como feita naquele dia
+    const dia = e.quando && e.quando.slice(0, 10) < hoje() ? e.quando.slice(0, 10) : hoje();
+    batch.set(col.entrevistas.doc(e.id), { status: 'realizada', realizadaEm: dia, resultado: resultado || '', updatedAt: TS() }, { merge: true });
     const c = e.chamadoId && S.chamados.find(x => x.id === e.chamadoId);
     if (c && resultado === 'aceitou') {
         batch.set(col.chamados.doc(c.id), {
