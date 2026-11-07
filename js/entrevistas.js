@@ -82,7 +82,7 @@ function salvar() {
 
 // --- Resultado (só para chamados/desobrigações: a pessoa aceitou?) ---
 
-function realizada(id) {
+export function marcarRealizada(id) {
     const e = S.entrevistas.find(x => x.id === id);
     if (!e) return;
     if (!e.chamadoId) { concluirEntrevista(e, null); showToast('Entrevista realizada.'); return; }
@@ -101,7 +101,7 @@ export function initEntrevistas() {
     $('ent-filtro').addEventListener('change', render);
     $('ent-lista').addEventListener('click', e => {
         const r = e.target.closest('[data-realizada]');
-        if (r) return realizada(r.dataset.realizada);
+        if (r) return marcarRealizada(r.dataset.realizada);
         const el = e.target.closest('[data-ent]');
         if (el) abrirEntrevista(el.dataset.ent);
     });
