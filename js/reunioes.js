@@ -2,14 +2,14 @@
 import { S } from './state.js';
 import { $, esc, hoje, formatDate, dataPorExtenso, showToast } from './util.js';
 import {
-    aoMudar, ETAPAS, TIPOS_CHAMADO, ENTREVISTADORES, STATUS_ENT, proximoDomingo, somaDias, ehDesob, descChamado,
+    aoMudar, ETAPAS, TIPOS_CHAMADO, TIPOS_ENT, ENTREVISTADORES, STATUS_ENT, proximoDomingo, somaDias, ehDesob, descChamado,
     entrevistaDoChamado, acaoAtrasada, quandoTxt, nomesConhecidos,
     criarChamado, enviarParaEntrevista, mudarEtapa, criarAcao, marcarAcao, excluirAcao,
     novaReuniao, salvarReuniao, excluirReuniao, concluirEntrevista
 } from './bispado-dados.js';
 import { DIAS_ANUNCIO } from './ata-auto.js';
 import { abrirChamado } from './chamados.js';
-import { abrirEntrevista } from './entrevistas.js';
+import { abrirEntrevista, marcarRealizada } from './entrevistas.js';
 import { ORGS, horario } from './agenda-core.js';
 
 let atualId = null;
@@ -70,10 +70,8 @@ function renderPauta() {
         linhaChamado(c, c.apoiadoEm ? `apoiado em ${formatDate(c.apoiadoEm)}` : '',
             `<button class="btn btn-success btn-sm" data-designado="${esc(c.id)}">Designado</button>`));
 
-    // 6. Entrevistas a marcar
-    const itEnt = S.entrevistas.filter(e => e.status === 'pendente').map(e => `<div class="pauta-item">
-        <div class="pauta-info"><b>${esc(e.pessoa)}</b> <span class="muted">· ${esc(e.motivo || '')}</span></div>
-        <div class="pauta-bts"><button class="btn btn-primary btn-sm" data-marcar="${esc(e.id)}">Marcar</button></div></div>`);
+    // 6. Entrevistas: a marcar, marcadas (vencidas em destaque) e realizadas desde a última reunião
+    const entHTML = renderEntrevistasPauta(t);
 
     // 7. Atividades das próximas 3 semanas
     const fim = somaDias(t, DIAS_ANUNCIO);
@@ -87,8 +85,52 @@ function renderPauta() {
         secao('Aguardando entrevista ou resposta', 'fa-user-clock', itConvite, 'Ninguém aguardando.') +
         secao('Apoios e desobrigações', 'fa-hand', itApoio, 'Nada para apoiar.') +
         secao('Designações pendentes', 'fa-hands', itDesig, 'Nenhuma designação pendente.') +
-        secao('Entrevistas a marcar', 'fa-calendar-plus', itEnt, 'Nenhuma entrevista a marcar.') +
+        entHTML +
         secao(`Atividades até ${formatDate(fim).slice(0, 5)}`, 'fa-calendar-days', itAtiv, 'Nenhuma atividade nas próximas 3 semanas.');
+}
+
+// Entrevistas na pauta
+function renderEntrevistasPauta(t) {
+    const agora = new Date();
+    const agoraTxt = `${t}T${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+    // "Desde a última reunião": data da reunião anterior a hoje (ou últimos 14 dias)
+    const anterior = S.reunioes.map(r => r.data).filter(d => d && d < t).sort().pop() || somaDias(t, -14);
+    const linhaEnt = e => `${esc(e.pessoa)} <span class="muted">· ${e.chamadoId ? esc(e.motivo || '') : esc(TIPOS_ENT[e.tipo] || '') + (e.motivo && e.motivo !== TIPOS_ENT[e.tipo] ? ' – ' + esc(e.motivo) : '')}</span>`;
+
+    const aMarcar = S.entrevistas.filter(e => e.status === 'pendente')
+        .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
+        .map(e => `<div class="pauta-item">
+            <div class="pauta-info"><b>${linhaEnt(e)}</b><div class="pauta-sub">${ENTREVISTADORES[e.entrevistador] || ''}</div></div>
+            <div class="pauta-bts"><button class="btn btn-primary btn-sm" data-marcar="${esc(e.id)}">Marcar</button></div></div>`);
+
+    const marcadas = S.entrevistas.filter(e => e.status === 'marcada').sort((a, b) => (a.quando || '').localeCompare(b.quando || ''));
+    const vencidas = marcadas.filter(e => e.quando && e.quando < agoraTxt);
+    const futuras = marcadas.filter(e => !e.quando || e.quando >= agoraTxt);
+    const itVencidas = vencidas.map(e => `<div class="pauta-item vencida">
+            <div class="pauta-info"><b>${linhaEnt(e)}</b>
+                <div class="pauta-sub"><i class="fas fa-triangle-exclamation"></i> Era ${esc(quandoTxt(e.quando))} · ${ENTREVISTADORES[e.entrevistador] || ''} · <b>confirmar se foi feita</b></div></div>
+            <div class="pauta-bts">
+                <button class="btn btn-success btn-sm" data-realizada="${esc(e.id)}">Foi feita</button>
+                <button class="btn btn-light btn-sm" data-marcar="${esc(e.id)}">Remarcar</button></div></div>`);
+    const itFuturas = futuras.map(e => `<div class="pauta-item">
+            <div class="pauta-info"><b>${linhaEnt(e)}</b><div class="pauta-sub"><i class="far fa-clock"></i> ${esc(quandoTxt(e.quando))} · ${ENTREVISTADORES[e.entrevistador] || ''}</div></div></div>`);
+
+    const realizadas = S.entrevistas.filter(e => e.status === 'realizada' && (e.realizadaEm || '') >= anterior)
+        .sort((a, b) => (b.realizadaEm || '').localeCompare(a.realizadaEm || ''))
+        .map(e => `<div class="pauta-item feita">
+            <div class="pauta-info"><i class="fas fa-check"></i> ${linhaEnt(e)}
+                <div class="pauta-sub">Feita em ${formatDate(e.realizadaEm || '')}${e.resultado === 'aceitou' ? ' · aceitou' : e.resultado === 'recusou' ? ' · não aceitou' : ''}</div></div></div>`);
+
+    const sub = (titulo, itens, vazio, cls = '') => `<div class="pauta-subtit ${cls}">${titulo} <span>${itens.length}</span></div>` +
+        (itens.length ? itens.join('') : `<div class="pauta-vazio">${vazio}</div>`);
+    const total = aMarcar.length + vencidas.length;
+    return `<div class="pauta-sec">
+        <div class="pauta-tit"><i class="fas fa-user-clock"></i> Entrevistas ${total ? `<span class="pauta-n${vencidas.length ? ' alerta' : ''}">${total}</span>` : ''}</div>
+        ${vencidas.length ? sub('Data passou: confirmar se foi feita', itVencidas, '', 'alerta') : ''}
+        ${sub('A marcar', aMarcar, 'Nenhuma entrevista a marcar.')}
+        ${sub('Marcadas', itFuturas, 'Nenhuma entrevista marcada.')}
+        ${sub(`Realizadas desde ${formatDate(anterior).slice(0, 5)}`, realizadas, 'Nenhuma realizada desde a última reunião.')}
+    </div>`;
 }
 
 // =====================================================================
@@ -215,6 +257,7 @@ function cliquesComuns(e) {
     if ((el = g('[data-designado]'))) { const c = ch(el.dataset.designado); if (c) mudarEtapa(c, 'designado'); return true; }
     if ((el = g('[data-editar-ch]'))) { abrirChamado(el.dataset.editarCh); return true; }
     if ((el = g('[data-marcar]'))) { abrirEntrevista(el.dataset.marcar); return true; }
+    if ((el = g('[data-realizada]'))) { marcarRealizada(el.dataset.realizada); return true; }
     return false;
 }
 
