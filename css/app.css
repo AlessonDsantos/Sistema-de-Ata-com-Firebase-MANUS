@@ -655,3 +655,14 @@ header.nav-cheia .app-nav { order: 3; flex-basis: 100%; justify-content: center;
     .ent-bts { width: 100%; }
     .ent-bts .btn { flex: 1; justify-content: center; }
 }
+
+/* Pauta: entrevistas */
+.pauta-subtit { font-size: 0.74rem; font-weight: 700; color: #777; margin: 0.6rem 0 0.3rem; display: flex; gap: 6px; align-items: center; }
+.pauta-subtit span { background: #e5e8eb; color: #555; border-radius: 10px; padding: 0 6px; font-size: 0.68rem; }
+.pauta-subtit.alerta { color: #b9770e; }
+.pauta-subtit.alerta span { background: #f39c12; color: white; }
+.pauta-n.alerta { background: #f39c12; }
+.pauta-item.vencida { border: 1.5px solid #f39c12; background: #fef5e7; }
+.pauta-item.vencida .pauta-sub { color: #9a6200; }
+.pauta-item.feita { background: #f4fbf5; border-color: #d4edda; }
+.pauta-item.feita .fa-check { color: var(--success-color); }
